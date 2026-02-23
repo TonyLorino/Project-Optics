@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 120" width="720" height="120">
+  <defs>
+    <filter id="blur" x="-5%" y="-10%" width="110%" height="120%">
+      <feGaussianBlur stdDeviation="1.0"/>
+    </filter>
+    <linearGradient id="grad-blur" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="20%" stop-color="white"/>
+      <stop offset="54%" stop-color="black"/>
+    </linearGradient>
+    <linearGradient id="grad-sharp" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="20%" stop-color="black"/>
+      <stop offset="54%" stop-color="white"/>
+    </linearGradient>
+    <mask id="mask-blur">
+      <rect width="720" height="120" fill="url(#grad-blur)"/>
+    </mask>
+    <mask id="mask-sharp">
+      <rect width="720" height="120" fill="url(#grad-sharp)"/>
+    </mask>
+  </defs>
+  <text
+    x="360" y="82"
+    text-anchor="middle"
+    font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif"
+    font-weight="800"
+    font-size="72"
+    letter-spacing="-1.5"
+    fill="#000000"
+    filter="url(#blur)"
+    mask="url(#mask-blur)"
+  >Project Optics</text>
+  <text
+    x="360" y="82"
+    text-anchor="middle"
+    font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif"
+    font-weight="800"
+    font-size="72"
+    letter-spacing="-1.5"
+    fill="#000000"
+    mask="url(#mask-sharp)"
+  >Project Optics</text>
+</svg>

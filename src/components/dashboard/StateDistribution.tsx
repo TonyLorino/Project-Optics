@@ -1,0 +1,114 @@
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  Cell,
+} from 'recharts'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Skeleton } from '@/components/ui/skeleton'
+import { STATE_COLORS } from '@/lib/colors'
+import { ChartTooltip } from './ChartTooltip'
+import type { StateDistributionEntry } from '@/types/metrics'
+
+interface StateDistributionProps {
+  data: StateDistributionEntry[]
+  isLoading?: boolean
+}
+
+export function StateDistribution({
+  data,
+  isLoading,
+}: StateDistributionProps) {
+  if (isLoading) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">State Distribution</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Skeleton className="h-[250px] w-full" />
+        </CardContent>
+      </Card>
+    )
+  }
+
+  if (data.length === 0) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">State Distribution</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="h-[250px] flex items-center justify-center text-muted-foreground text-sm">
+            No data available
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base">State Distribution</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <ResponsiveContainer width="100%" height={250}>
+          <BarChart data={data} layout="vertical" barCategoryGap="20%">
+            <CartesianGrid
+              strokeDasharray="3 3"
+              className="stroke-border"
+              horizontal={false}
+            />
+            <XAxis
+              type="number"
+              tick={{ fontSize: 12 }}
+              className="text-muted-foreground"
+              axisLine={false}
+              tickLine={false}
+            />
+            <YAxis
+              type="category"
+              dataKey="state"
+              tick={{ fontSize: 12 }}
+              width={80}
+              className="text-muted-foreground"
+              axisLine={false}
+              tickLine={false}
+            />
+            <Tooltip
+              content={<ChartTooltip formatRows={(p) =>
+                p?.map((e) => {
+                  const entry = e.payload as StateDistributionEntry
+                  return {
+                    label: entry.state,
+                    value: `${e.value} (${entry.percentage}%)`,
+                  }
+                }) ?? []
+              } />}
+              cursor={false}
+            />
+            <Bar
+              dataKey="count"
+              radius={[0, 6, 6, 0]}
+              barSize={24}
+              animationDuration={600}
+              animationEasing="ease-out"
+            >
+              {data.map((entry) => (
+                <Cell
+                  key={entry.state}
+                  fill={STATE_COLORS[entry.state] ?? 'hsl(var(--chart-1))'}
+                />
+              ))}
+            </Bar>
+          </BarChart>
+        </ResponsiveContainer>
+      </CardContent>
+    </Card>
+  )
+}
