@@ -35,7 +35,7 @@ import {
 
 const PAGE_SIZE = TABLE_PAGE_SIZE
 
-type SortKey = 'id' | 'title' | 'state' | 'category' | 'priority' | 'assignedTo' | 'age' | 'createdDate'
+type SortKey = 'id' | 'title' | 'state' | 'category' | 'parent' | 'assignedTo' | 'age' | 'createdDate'
 type SortDir = 'asc' | 'desc'
 
 function daysSince(dateStr: string): number {
@@ -120,9 +120,12 @@ export function RaidTable({
         case 'category':
           cmp = a.category.localeCompare(b.category)
           break
-        case 'priority':
-          cmp = (a.item.priority ?? 99) - (b.item.priority ?? 99)
+        case 'parent': {
+          const pA = a.item.parentId ? parentLookup.get(a.item.parentId)?.title ?? '' : ''
+          const pB = b.item.parentId ? parentLookup.get(b.item.parentId)?.title ?? '' : ''
+          cmp = pA.localeCompare(pB)
           break
+        }
         case 'assignedTo':
           cmp = (a.item.assignedTo?.displayName ?? '').localeCompare(b.item.assignedTo?.displayName ?? '')
           break
@@ -136,7 +139,7 @@ export function RaidTable({
       return sortDir === 'asc' ? cmp : -cmp
     })
     return rows
-  }, [raidRows, sortKey, sortDir])
+  }, [raidRows, sortKey, sortDir, parentLookup])
 
   const totalPages = Math.ceil(sortedRows.length / PAGE_SIZE)
   const pageRows = sortedRows.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE)
@@ -191,7 +194,7 @@ export function RaidTable({
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle className="text-base">
-          {showImpacted ? 'Impacted Work Items' : 'RAID Log'}
+          {showImpacted ? 'Impacted Work Items' : 'Watch List'}
         </CardTitle>
         <div className="flex items-center gap-2">
           <Button
@@ -201,7 +204,7 @@ export function RaidTable({
             onClick={() => { setShowImpacted((v) => !v); setPage(0) }}
           >
             <Link2 className="h-3.5 w-3.5 mr-1" />
-            {showImpacted ? 'Show RAID Items' : 'Show Impacted'}
+            {showImpacted ? 'Show Watch List' : 'Show Impacted'}
           </Button>
           {!showImpacted && (
             <>
@@ -223,12 +226,12 @@ export function RaidTable({
           </div>
         ) : error ? (
           <div className="h-32 flex flex-col items-center justify-center gap-1 text-sm">
-            <span className="text-destructive font-medium">Failed to load RAID items</span>
+            <span className="text-destructive font-medium">Failed to load watch list items</span>
             <span className="text-muted-foreground">{error.message}</span>
           </div>
         ) : !hasContent ? (
           <div className="h-32 flex items-center justify-center text-muted-foreground text-sm">
-            {showImpacted ? 'No impacted work items found' : 'No RAID items found'}
+            {showImpacted ? 'No impacted work items found' : 'No watch list items found'}
           </div>
         ) : (
           <>
@@ -240,7 +243,7 @@ export function RaidTable({
                     <SortableHead label="Type" field="category" className="w-[140px]" />
                     <SortableHead label="Title" field="title" />
                     <SortableHead label="State" field="state" className="w-[100px]" />
-                    <SortableHead label="Priority" field="priority" className="hidden sm:table-cell w-[90px]" />
+                    <SortableHead label="Parent" field="parent" className="hidden sm:table-cell" />
                     <SortableHead label="Owner" field="assignedTo" className="hidden lg:table-cell" />
                     <SortableHead label="Age" field="age" className="hidden md:table-cell w-[70px]" />
                     <SortableHead label="Created" field="createdDate" className="hidden md:table-cell" />
@@ -308,9 +311,13 @@ export function RaidTable({
                               {item.state}
                             </Badge>
                           </TableCell>
-                          <TableCell className="hidden sm:table-cell text-sm">
-                            {item.priority != null ? `P${item.priority}` : (
-                              <span className="text-muted-foreground">-</span>
+                          <TableCell className="hidden sm:table-cell text-sm max-w-[200px]">
+                            {parent ? (
+                              <span className="truncate block text-muted-foreground" title={`${parent.workItemType}: ${parent.title}`}>
+                                {parent.title}
+                              </span>
+                            ) : (
+                              <span className="text-muted-foreground">—</span>
                             )}
                           </TableCell>
                           <TableCell className="hidden lg:table-cell text-sm">
@@ -345,14 +352,11 @@ export function RaidTable({
                                 {parent.workItemType}
                               </Badge>
                             </TableCell>
-                            <TableCell className="max-w-[400px]" colSpan={2}>
+                            <TableCell className="max-w-[400px]" colSpan={3}>
                               <div className="flex items-center gap-1.5 pl-6 text-sm text-muted-foreground">
                                 <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground/70">Parent:</span>
                                 <span className="truncate" title={parent.title}>{parent.title}</span>
                               </div>
-                            </TableCell>
-                            <TableCell className="hidden sm:table-cell text-sm text-muted-foreground">
-                              {parent.priority != null ? `P${parent.priority}` : '-'}
                             </TableCell>
                             <TableCell className="hidden lg:table-cell text-sm text-muted-foreground">
                               {parent.assignedTo?.displayName ?? 'Unassigned'}

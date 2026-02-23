@@ -28,6 +28,7 @@ import { cn } from '@/lib/utils'
 
 const ADO_ORG = import.meta.env.VITE_ADO_ORGANIZATION as string | undefined
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars -- used by commented-out % complete section
 function StatusDot({ status }: { status: 'green' | 'yellow' | 'red' }) {
   const colors = {
     green: 'bg-green-400',
@@ -290,12 +291,14 @@ export function Reports() {
                 <h2 className="text-3xl font-extrabold tracking-tight bg-gradient-to-r from-foreground to-foreground/60 bg-clip-text text-transparent">
                   {report.projectName}{reportAreaName ? ` - ${reportAreaName}` : ''}
                 </h2>
+                {/* TODO: re-enable once % complete calculation is fixed
                 <div className="flex items-center gap-2 mt-1">
                   <StatusDot status={report.overallStatus} />
                   <span className="text-sm text-muted-foreground font-medium">
                     {report.progressPercent}% complete
                   </span>
                 </div>
+                */}
               </div>
               <div className="flex items-center gap-1.5">
                 <span className="text-xs text-muted-foreground mr-1">

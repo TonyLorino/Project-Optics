@@ -11,7 +11,6 @@ import { FilterBar } from '@/components/filters/FilterBar'
 import { MetricCard } from '@/components/dashboard/MetricCard'
 import { DashboardError } from '@/components/dashboard/DashboardError'
 import { RaidTypeChart } from '@/components/watchlist/RaidTypeChart'
-import { RaidPriorityChart } from '@/components/watchlist/RaidPriorityChart'
 import { RaidTable } from '@/components/watchlist/RaidTable'
 import { useProjects } from '@/hooks/useProjects'
 import { useWorkItems } from '@/hooks/useWorkItems'
@@ -19,7 +18,6 @@ import { useIterations } from '@/hooks/useIterations'
 import {
   useRaidMetrics,
   useRaidTypeDistribution,
-  useRaidPriorityDistribution,
 } from '@/hooks/useRaidMetrics'
 import { useAreaPaths } from '@/hooks/useAreaPaths'
 import { useUIStore } from '@/store/uiStore'
@@ -142,12 +140,11 @@ export function WatchList() {
 
   const metrics = useRaidMetrics(workItems)
   const typeDistribution = useRaidTypeDistribution(workItems)
-  const priorityDistribution = useRaidPriorityDistribution(workItems)
 
   const isLoading = projectsLoading || workItemsLoading || iterationsLoading
 
   const refetchRef = useRef(refetch)
-  refetchRef.current = refetch
+  useEffect(() => { refetchRef.current = refetch }, [refetch])
   const stableRefetch = useMemo(() => () => { void refetchRef.current() }, [])
 
   useEffect(() => {
@@ -217,6 +214,7 @@ export function WatchList() {
             icon={<ShieldAlert className="h-5 w-5" />}
             label="Open Risks"
             value={metrics.openRisks}
+            subtitle="Active risk items"
             isLoading={isLoading}
           />,
           <MetricCard
@@ -248,13 +246,11 @@ export function WatchList() {
       </div>
 
       <motion.div
-        className="grid grid-cols-1 lg:grid-cols-2 gap-4"
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.25, duration: 0.3, ease: 'easeOut' }}
       >
         <RaidTypeChart data={typeDistribution} isLoading={isLoading} />
-        <RaidPriorityChart data={priorityDistribution} isLoading={isLoading} />
       </motion.div>
 
       <motion.div
