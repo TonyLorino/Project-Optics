@@ -90,7 +90,7 @@ export function VelocityChart({
             />
             <Tooltip
               content={<ChartTooltip formatRows={(p) =>
-                p?.map((e) => ({
+                p?.map((e: { name?: string; value?: string | number }) => ({
                   label: String(e.name ?? ''),
                   value: `${e.value} pts`,
                 })) ?? []

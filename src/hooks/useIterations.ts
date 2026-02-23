@@ -13,15 +13,15 @@ import { REFETCH_INTERVAL_MS } from '@/lib/constants'
  */
 export function useIterations(projectNames: string[]) {
   return useQuery({
-    queryKey: ['iterations', projectNames],
+    queryKey: ['iterations', [...projectNames].sort().join(',')],
     queryFn: async (): Promise<Sprint[]> => {
       const results = await Promise.all(
         projectNames.map(async (projectName) => {
           try {
             const teams = await fetchTeams(projectName)
-            if (teams.length === 0) return [] as Sprint[]
-            // Use the first team as default
-            return fetchIterations(projectName, teams[0].name)
+            const defaultTeam = teams[0]
+            if (!defaultTeam) return [] as Sprint[]
+            return fetchIterations(projectName, defaultTeam.name)
           } catch {
             // Some projects may not have iterations configured
             return [] as Sprint[]
@@ -31,7 +31,7 @@ export function useIterations(projectNames: string[]) {
       return results.flat()
     },
     enabled: projectNames.length > 0,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 5 * 60 * 1000, // Sprint definitions are stable; 5 min cache
     refetchInterval: REFETCH_INTERVAL_MS,
   })
 }

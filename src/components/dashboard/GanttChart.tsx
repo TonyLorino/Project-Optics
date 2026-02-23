@@ -18,7 +18,6 @@ import { getWorkItemColor } from '@/lib/colors'
 import { StateFilter, ALL_STATES } from './StateFilter'
 import {
   type TreeNode,
-  type FlatRow,
   type TopLevel,
   buildTree,
   hierarchyRank,
@@ -72,9 +71,10 @@ interface TooltipData {
 interface GanttChartProps {
   workItems: WorkItem[]
   isLoading?: boolean
+  error?: Error | null
 }
 
-export function GanttChart({ workItems, isLoading }: GanttChartProps) {
+export function GanttChart({ workItems, isLoading, error }: GanttChartProps) {
   const [expandedIds, setExpandedIds] = useState<Set<string>>(() => new Set())
   const [tooltip, setTooltip] = useState<TooltipData | null>(null)
   const [zoomLevel, setZoomLevel] = useState<ZoomLevel>('quarter')
@@ -220,12 +220,15 @@ export function GanttChart({ workItems, isLoading }: GanttChartProps) {
 
   const handleBarHover = useCallback(
     (item: WorkItem, e: React.MouseEvent) => {
-      const rect = containerRef.current?.getBoundingClientRect()
-      if (!rect) return
+      const container = containerRef.current
+      if (!container) return
+      const rect = container.getBoundingClientRect()
+      const rawX = e.clientX - rect.left
+      const clampedX = Math.min(rawX + 12, container.clientWidth - 270)
       setTooltip({
         item,
-        x: e.clientX - rect.left,
-        y: e.clientY - rect.top,
+        x: clampedX,
+        y: e.clientY - rect.top + 12,
       })
     },
     [],
@@ -284,6 +287,11 @@ export function GanttChart({ workItems, isLoading }: GanttChartProps) {
             {Array.from({ length: 5 }).map((_, i) => (
               <Skeleton key={i} className="h-9 w-full" />
             ))}
+          </div>
+        ) : error ? (
+          <div className="h-32 flex flex-col items-center justify-center gap-1 text-sm">
+            <span className="text-destructive font-medium">Failed to load timeline</span>
+            <span className="text-muted-foreground">{error.message}</span>
           </div>
         ) : !hasContent ? (
           <div className="h-32 flex items-center justify-center text-muted-foreground text-sm">
@@ -503,8 +511,8 @@ export function GanttChart({ workItems, isLoading }: GanttChartProps) {
             <div
               className="absolute z-50 pointer-events-none bg-popover border rounded-lg shadow-lg p-3 text-xs max-w-[260px]"
               style={{
-                left: Math.min(tooltip.x + 12, (containerRef.current?.clientWidth ?? 500) - 270),
-                top: tooltip.y + 12,
+                left: tooltip.x,
+                top: tooltip.y,
               }}
             >
               <p className="font-semibold truncate">{tooltip.item.title}</p>

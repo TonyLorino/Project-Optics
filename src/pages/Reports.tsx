@@ -173,7 +173,6 @@ export function Reports() {
   const report = useProjectReport(workItems, iterations, reportProject, wikiData)
 
   const isLoading = projectsLoading || workItemsLoading || iterationsLoading
-  const lastUpdated = dataUpdatedAt ? new Date(dataUpdatedAt) : undefined
 
   const refetchRef = useRef(refetch)
   refetchRef.current = refetch

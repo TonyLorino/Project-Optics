@@ -31,8 +31,12 @@ export function parseSelections(selections: string[]): ParsedSelections {
     } else {
       const projectName = entry.slice(0, sepIdx)
       projectSet.add(projectName)
-      if (!areaMap.has(projectName)) areaMap.set(projectName, [])
-      areaMap.get(projectName)!.push(entry)
+      const existing = areaMap.get(projectName)
+      if (existing) {
+        existing.push(entry)
+      } else {
+        areaMap.set(projectName, [entry])
+      }
     }
   }
 

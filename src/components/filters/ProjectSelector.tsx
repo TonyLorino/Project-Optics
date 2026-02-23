@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react'
+import { useState, useMemo, useCallback, useEffect } from 'react'
 import { Check, ChevronRight, ChevronDown, ChevronsUpDown, ChevronsDownUp, FolderOpen, GitBranch } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -53,12 +53,13 @@ export function ProjectSelector({
     [visibleProjects, areaPaths],
   )
 
-  // Auto-expand projects that have area paths on first render
   const [hasAutoExpanded, setHasAutoExpanded] = useState(false)
-  if (!hasAutoExpanded && projectsWithAreas.size > 0) {
-    setHasAutoExpanded(true)
-    setExpandedProjects(new Set(projectsWithAreas))
-  }
+  useEffect(() => {
+    if (!hasAutoExpanded && projectsWithAreas.size > 0) {
+      setHasAutoExpanded(true)
+      setExpandedProjects(new Set(projectsWithAreas))
+    }
+  }, [hasAutoExpanded, projectsWithAreas])
 
   function isProjectFullySelected(projectName: string): boolean {
     if (selected.includes(projectName)) return true
@@ -182,10 +183,11 @@ export function ProjectSelector({
 
     if (projectSet.size === 1) {
       const onlyProject = [...projectSet][0]
+      if (!onlyProject) return '1 Project'
       if (selected.includes(onlyProject)) return onlyProject
       // Area-specific: show "Project > Area" for single area
       const areaEntries = selected.filter((s) => s.startsWith(onlyProject + '\\'))
-      if (areaEntries.length === 1) {
+      if (areaEntries.length === 1 && areaEntries[0]) {
         const areaName = areaEntries[0].slice(onlyProject.length + 1)
         return `${onlyProject} > ${areaName}`
       }
@@ -280,6 +282,7 @@ export function ProjectSelector({
                         <button
                           type="button"
                           className="mr-1 p-0.5 rounded hover:bg-accent/50 shrink-0"
+                          aria-label={isExpanded ? 'Collapse' : 'Expand'}
                           onClick={(e) => {
                             e.stopPropagation()
                             e.preventDefault()

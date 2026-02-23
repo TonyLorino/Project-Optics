@@ -58,39 +58,6 @@ export function SprintBurndown({
       0,
     )
 
-    if (import.meta.env.DEV) {
-      const closed = sprintItems.filter((w) => w.state === 'Closed')
-      const resolved = sprintItems.filter((w) => w.state === 'Resolved')
-      const withClosedDate = sprintItems.filter((w) => w.closedDate)
-      const withResolvedDate = sprintItems.filter((w) => w.resolvedDate)
-      const withStateChangeDate = sprintItems.filter((w) => w.stateChangeDate)
-      console.log('[Burndown]', sprint.name, {
-        sprintPath: sprint.path,
-        totalItems: sprintItems.length,
-        totalPoints,
-        states: {
-          closed: closed.length,
-          resolved: resolved.length,
-          active: sprintItems.filter((w) => w.state === 'Active').length,
-          new: sprintItems.filter((w) => w.state === 'New').length,
-        },
-        dateFields: {
-          withClosedDate: withClosedDate.length,
-          withResolvedDate: withResolvedDate.length,
-          withStateChangeDate: withStateChangeDate.length,
-        },
-        sampleClosedItem: closed[0]
-          ? {
-              id: closed[0].id,
-              title: closed[0].title,
-              closedDate: closed[0].closedDate,
-              resolvedDate: closed[0].resolvedDate,
-              stateChangeDate: closed[0].stateChangeDate,
-            }
-          : 'none',
-      })
-    }
-
     const today = startOfDay(new Date())
     const data: BurndownDataPoint[] = []
 
@@ -198,8 +165,8 @@ export function SprintBurndown({
               tickLine={false}
             />
             <Tooltip
-              content={<ChartTooltip formatRows={(p, lbl) =>
-                p?.map((e) => ({
+              content={<ChartTooltip formatRows={(p) =>
+                p?.map((e: { name?: string; value?: string | number }) => ({
                   label: String(e.name ?? ''),
                   value: `${e.value} pts`,
                 })) ?? []

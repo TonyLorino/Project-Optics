@@ -82,8 +82,8 @@ export function StateDistribution({
             />
             <Tooltip
               content={<ChartTooltip formatRows={(p) =>
-                p?.map((e) => {
-                  const entry = e.payload as StateDistributionEntry
+                p?.map((e: { name?: string; value?: string | number; color?: string; payload?: Record<string, unknown> }) => {
+                  const entry = e.payload as unknown as StateDistributionEntry
                   return {
                     label: entry.state,
                     value: `${e.value} (${entry.percentage}%)`,

@@ -69,5 +69,5 @@ const LINKED_RISK_CLASSES = 'bg-amber-200 text-amber-900 dark:bg-amber-800 dark:
 export function getWorkItemBgClass(item: WorkItem): string {
   if (item.workItemType === 'Issue' || item.hasLinkedIssue) return LINKED_ISSUE_CLASSES
   if (item.workItemType === 'Risk' || item.hasLinkedRisk) return LINKED_RISK_CLASSES
-  return STATE_BG_CLASSES[item.state] ?? STATE_BG_CLASSES.New
+  return STATE_BG_CLASSES[item.state] ?? 'bg-zinc-300 text-zinc-800 dark:bg-zinc-600 dark:text-zinc-100'
 }

@@ -80,8 +80,8 @@ export function RaidPriorityChart({ data, isLoading }: RaidPriorityChartProps) {
             />
             <Tooltip
               content={<ChartTooltip formatRows={(p) =>
-                p?.map((e) => ({
-                  label: String((e.payload as RaidPriorityEntry)?.priority ?? ''),
+                p?.map((e: { name?: string; value?: string | number; color?: string; payload?: Record<string, unknown> }) => ({
+                  label: String((e.payload as unknown as RaidPriorityEntry)?.priority ?? ''),
                   value: `${e.value} items`,
                 })) ?? []
               } />}

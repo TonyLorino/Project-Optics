@@ -32,10 +32,10 @@ export function useMetrics(workItems: WorkItem[]): DashboardMetrics {
 
     // Average cycle time: days between activation and close
     const cycleTimes = workItems
-      .filter((w) => w.activatedDate && w.closedDate)
-      .map((w) =>
-        differenceInDays(parseISO(w.closedDate!), parseISO(w.activatedDate!)),
+      .filter((w): w is typeof w & { activatedDate: string; closedDate: string } =>
+        w.activatedDate != null && w.closedDate != null,
       )
+      .map((w) => differenceInDays(parseISO(w.closedDate), parseISO(w.activatedDate)))
       .filter((d) => d >= 0)
 
     const averageCycleTimeDays =

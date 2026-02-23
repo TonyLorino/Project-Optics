@@ -32,9 +32,10 @@ export function useTeamWorkload(
     >()
 
     for (const item of sprintStories) {
-      const name = item.assignedTo!.displayName
+      if (!item.assignedTo) continue
+      const name = item.assignedTo.displayName
       const entry = memberMap.get(name) ?? {
-        imageUrl: item.assignedTo!.imageUrl,
+        imageUrl: item.assignedTo.imageUrl,
         stories: 0,
         points: 0,
       }

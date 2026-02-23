@@ -2,6 +2,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { AnimatePresence, motion } from 'framer-motion'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { Toaster } from '@/components/ui/sonner'
+import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { AppLayout } from '@/components/layout/AppLayout'
 import { Dashboard } from '@/pages/Dashboard'
 import { Reports } from '@/pages/Reports'
@@ -42,7 +43,9 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <AppLayout>
-          <PageRouter />
+          <ErrorBoundary>
+            <PageRouter />
+          </ErrorBoundary>
         </AppLayout>
         <Toaster richColors position="bottom-right" />
       </TooltipProvider>

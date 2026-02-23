@@ -55,6 +55,7 @@ export function RaidTypeFilter({ selected, onChange }: RaidTypeFilterProps) {
         <button
           role="combobox"
           aria-expanded={open}
+          aria-label="Filter by RAID type"
           data-slot="select-trigger"
           data-size="default"
           className={cn(

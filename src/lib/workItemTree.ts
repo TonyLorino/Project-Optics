@@ -54,9 +54,11 @@ export function buildTree(items: WorkItem[]): TreeNode[] {
 
   const roots: TreeNode[] = []
   for (const item of items) {
-    const node = idMap.get(item.id)!
-    if (item.parentId && idMap.has(item.parentId)) {
-      idMap.get(item.parentId)!.children.push(node)
+    const node = idMap.get(item.id)
+    if (!node) continue
+    const parentNode = item.parentId ? idMap.get(item.parentId) : undefined
+    if (parentNode) {
+      parentNode.children.push(node)
     } else {
       roots.push(node)
     }
@@ -81,8 +83,12 @@ export function groupByAreaPath(roots: TreeNode[]): AreaGroup[] {
   const groups = new Map<string, TreeNode[]>()
   for (const root of roots) {
     const area = getDisplayArea(root.item)
-    if (!groups.has(area)) groups.set(area, [])
-    groups.get(area)!.push(root)
+    const existing = groups.get(area)
+    if (existing) {
+      existing.push(root)
+    } else {
+      groups.set(area, [root])
+    }
   }
 
   const sorted = [...groups.entries()].sort(([a], [b]) => {

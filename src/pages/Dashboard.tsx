@@ -185,10 +185,9 @@ export function Dashboard() {
   const currentSprint = iterations.find((s) => s.timeFrame === 'current')
 
   const isLoading = projectsLoading || workItemsLoading || iterationsLoading
-  const lastUpdated = dataUpdatedAt ? new Date(dataUpdatedAt) : undefined
 
   const refetchRef = useRef(refetch)
-  refetchRef.current = refetch
+  useEffect(() => { refetchRef.current = refetch }, [refetch])
   const stableRefetch = useMemo(() => () => { void refetchRef.current() }, [])
 
   useEffect(() => {

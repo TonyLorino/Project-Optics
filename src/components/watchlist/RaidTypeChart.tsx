@@ -20,6 +20,8 @@ interface RaidTypeChartProps {
 }
 
 export function RaidTypeChart({ data, isLoading }: RaidTypeChartProps) {
+  const total = useMemo(() => data.reduce((s, d) => s + d.count, 0), [data])
+
   if (isLoading) {
     return (
       <Card>
@@ -47,8 +49,6 @@ export function RaidTypeChart({ data, isLoading }: RaidTypeChartProps) {
       </Card>
     )
   }
-
-  const total = useMemo(() => data.reduce((s, d) => s + d.count, 0), [data])
 
   return (
     <Card>
@@ -100,7 +100,7 @@ export function RaidTypeChart({ data, isLoading }: RaidTypeChartProps) {
             </Pie>
             <Tooltip
               content={<ChartTooltip formatRows={(p) =>
-                p?.map((e) => ({
+                p?.map((e: { name?: string; value?: string | number; color?: string; payload?: Record<string, unknown> }) => ({
                   label: String(e.name ?? ''),
                   value: `${e.value} items`,
                 })) ?? []

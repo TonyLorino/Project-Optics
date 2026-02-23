@@ -95,7 +95,7 @@ export function TeamWorkload({ data, isLoading }: TeamWorkloadProps) {
             />
             <Tooltip
               content={<ChartTooltip formatRows={(p) =>
-                p?.map((e) => {
+                p?.map((e: { name?: string; value?: string | number; color?: string; payload?: Record<string, unknown>; dataKey?: string }) => {
                   const label =
                     e.dataKey === 'stories' ? 'Stories'
                     : e.dataKey === 'storyPoints' ? 'Story Points'

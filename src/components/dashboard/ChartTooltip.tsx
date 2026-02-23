@@ -1,13 +1,14 @@
-import type { TooltipProps } from 'recharts'
-
 interface ChartTooltipRow {
   label: string
   value: string
   color?: string
 }
 
-interface ChartTooltipProps extends TooltipProps<number | string, string> {
-  formatRows?: (payload: TooltipProps<number | string, string>['payload'], label: string) => ChartTooltipRow[]
+interface ChartTooltipProps {
+  active?: boolean
+  payload?: Array<{ name?: string; value?: string | number; color?: string; payload?: Record<string, unknown> }>
+  label?: string | number
+  formatRows?: (payload: ChartTooltipProps['payload'], label: string) => ChartTooltipRow[]
 }
 
 export function ChartTooltip({ active, payload, label, formatRows }: ChartTooltipProps) {

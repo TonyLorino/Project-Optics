@@ -92,13 +92,17 @@ export function useProjectReport(
       .filter((d): d is string => d != null)
       .sort()
     if (targetDates.length > 0) {
-      endDate = format(new Date(targetDates[targetDates.length - 1]), 'yyyy-MM-dd')
+      const lastTarget = targetDates[targetDates.length - 1]
+      if (lastTarget) endDate = format(new Date(lastTarget), 'yyyy-MM-dd')
     } else {
       const projectSprints = sprints
-        .filter((s) => s.projectName === projectName && s.finishDate)
-        .sort((a, b) => new Date(b.finishDate!).getTime() - new Date(a.finishDate!).getTime())
-      if (projectSprints.length > 0) {
-        endDate = format(new Date(projectSprints[0].finishDate!), 'yyyy-MM-dd')
+        .filter((s): s is Sprint & { finishDate: string } =>
+          s.projectName === projectName && s.finishDate != null,
+        )
+        .sort((a, b) => new Date(b.finishDate).getTime() - new Date(a.finishDate).getTime())
+      const firstSprint = projectSprints[0]
+      if (firstSprint) {
+        endDate = format(new Date(firstSprint.finishDate), 'yyyy-MM-dd')
       }
     }
 
@@ -106,10 +110,9 @@ export function useProjectReport(
     const changedDates = items
       .map((w) => new Date(w.changedDate).getTime())
       .sort((a, b) => b - a)
+    const lastChanged = changedDates[0]
     const lastModified =
-      changedDates.length > 0
-        ? format(new Date(changedDates[0]), 'yyyy-MM-dd')
-        : null
+      lastChanged != null ? format(new Date(lastChanged), 'yyyy-MM-dd') : null
 
     // Total story points (all items with SP)
     const totalStoryPoints = items.reduce(

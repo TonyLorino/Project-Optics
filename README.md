@@ -67,6 +67,22 @@ npm run dev
 | `npm run lint`  | Run ESLint                           |
 | `npm run preview` | Preview the production build locally |
 
+## Deployment Note
+
+This app currently runs as a **dev-only** dashboard. The Vite dev server proxies
+API requests to Azure DevOps and injects the PAT server-side. A production build
+(`npm run build`) outputs static files that **cannot** reach Azure DevOps without
+a backend proxy in place.
+
+To deploy to production, you will need one of:
+
+- A serverless function (Vercel / Cloudflare Workers) that proxies `/api/ado/*`
+  and injects the PAT
+- A lightweight BFF (backend-for-frontend) server
+
+See the "Supabase Migration Path" section in
+[ARCHITECTURE.md](ARCHITECTURE.md) for more detail.
+
 ## Architecture
 
 See [ARCHITECTURE.md](ARCHITECTURE.md) for directory layout, ADO integration details,

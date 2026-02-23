@@ -2,7 +2,6 @@ import { adoClient } from '@/services/azureDevOps'
 import {
   ADO_API_VERSION,
   WORK_ITEM_BATCH_SIZE,
-  WORK_ITEM_FIELDS,
   WIQL_ALL_ITEMS,
   WIQL_ITERATION_ITEMS,
 } from '@/lib/constants'
@@ -10,6 +9,17 @@ import type { ADOWiqlResult, ADOWorkItem } from '@/types/ado'
 import type { WorkItem, WorkItemState, WorkItemType } from '@/types/workItem'
 
 // ── helpers ──────────────────────────────────────────────────
+
+const VALID_STATES = new Set<string>(['New', 'Active', 'Resolved', 'Closed', 'Removed'])
+const VALID_TYPES = new Set<string>(['User Story', 'Bug', 'Task', 'Epic', 'Feature', 'Issue', 'Risk'])
+
+function toWorkItemState(raw: string): WorkItemState {
+  return VALID_STATES.has(raw) ? (raw as WorkItemState) : ('New' as WorkItemState)
+}
+
+function toWorkItemType(raw: string): WorkItemType {
+  return VALID_TYPES.has(raw) ? (raw as WorkItemType) : ('Task' as WorkItemType)
+}
 
 const ISSUE_RISK_PATTERN = /\/(Issue|Risk)\//i
 
@@ -21,7 +31,7 @@ function detectLinkedTypes(raw: ADOWorkItem): { hasLinkedIssue: boolean; hasLink
     for (const rel of raw.relations) {
       if (!rel.url) continue
       const match = ISSUE_RISK_PATTERN.exec(rel.url)
-      if (match) {
+      if (match?.[1]) {
         const type = match[1].toLowerCase()
         if (type === 'issue') hasLinkedIssue = true
         if (type === 'risk') hasLinkedRisk = true
@@ -50,10 +60,10 @@ function mapWorkItem(raw: ADOWorkItem, allItemTypes: Map<number, string>): WorkI
     for (const rel of raw.relations) {
       if (rel.rel === 'System.LinkTypes.Hierarchy-Reverse') {
         const idMatch = /\/workItems\/(\d+)$/i.exec(rel.url)
-        if (idMatch) parentId = Number(idMatch[1])
+        if (idMatch?.[1]) parentId = Number(idMatch[1])
       }
       const idMatch = /\/workItems\/(\d+)$/i.exec(rel.url)
-      if (idMatch) {
+      if (idMatch?.[1]) {
         const relatedType = allItemTypes.get(Number(idMatch[1]))
         if (relatedType === 'Issue') hasLinkedIssue = true
         if (relatedType === 'Risk') hasLinkedRisk = true
@@ -65,8 +75,8 @@ function mapWorkItem(raw: ADOWorkItem, allItemTypes: Map<number, string>): WorkI
     id: raw.id,
     projectName: f['System.TeamProject'],
     title: f['System.Title'],
-    state: f['System.State'] as WorkItemState,
-    workItemType: f['System.WorkItemType'] as WorkItemType,
+    state: toWorkItemState(f['System.State']),
+    workItemType: toWorkItemType(f['System.WorkItemType']),
     assignedTo: f['System.AssignedTo']
       ? {
           displayName: f['System.AssignedTo'].displayName,
@@ -82,8 +92,8 @@ function mapWorkItem(raw: ADOWorkItem, allItemTypes: Map<number, string>): WorkI
     changedDate: f['System.ChangedDate'],
     stateChangeDate: f['Microsoft.VSTS.Common.StateChangeDate'] ?? undefined,
     closedDate: f['Microsoft.VSTS.Common.ClosedDate'] ?? undefined,
-    resolvedDate: f['Microsoft.VSTS.Common.ResolvedDate'] ?? undefined,
-    targetDate: (f['Microsoft.VSTS.Scheduling.TargetDate'] as string) ?? undefined,
+    resolvedDate: (f['Microsoft.VSTS.Common.ResolvedDate'] as string | undefined) ?? undefined,
+    targetDate: (f['Microsoft.VSTS.Scheduling.TargetDate'] as string | undefined) ?? undefined,
     activatedDate: f['Microsoft.VSTS.Common.ActivatedDate'] ?? undefined,
     tags: f['System.Tags'] ?? undefined,
     description: f['System.Description'] ?? undefined,
@@ -116,7 +126,7 @@ export async function queryWorkItemIds(
     `/${encodeURIComponent(projectName)}/_apis/wit/wiql?api-version=${ADO_API_VERSION}`,
     { query: wiql },
   )
-  return data.workItems.map((wi) => wi.id)
+  return (data.workItems ?? []).map((wi) => wi.id)
 }
 
 /**
@@ -133,15 +143,21 @@ export async function fetchWorkItemDetails(
 
   const rawItems: ADOWorkItem[] = []
 
-  // $expand=Relations returns all fields plus relations; cannot combine with fields param
-  await Promise.all(
+  const settled = await Promise.allSettled(
     batches.map(async (batch) => {
       const { data } = await adoClient.get<{ value: ADOWorkItem[] }>(
         `/_apis/wit/workitems?ids=${batch.join(',')}&$expand=Relations&api-version=${ADO_API_VERSION}`,
       )
-      rawItems.push(...data.value)
+      return data.value ?? []
     }),
   )
+  for (const result of settled) {
+    if (result.status === 'fulfilled') {
+      rawItems.push(...result.value)
+    } else {
+      console.warn('[fetchWorkItemDetails] Batch failed:', result.reason)
+    }
+  }
 
   // Build a lookup of ID -> WorkItemType so we can cross-reference relations
   const typeMap = new Map<number, string>()

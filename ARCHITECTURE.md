@@ -45,6 +45,12 @@ src/
 - WIQL queries are issued per-project in parallel; results are merged client-side.
 - Work-item detail fetches are batched in groups of 200 (ADO max).
 
+> **Production note:** The Vite proxy only exists during `npm run dev`. A
+> production build produces static files with no server to forward API calls.
+> Before deploying, you must set up a backend proxy (serverless function, BFF,
+> etc.) that rewrites `/api/ado/*` to `dev.azure.com/<org>/*` and attaches the
+> PAT header. See the Supabase migration path below for the recommended approach.
+
 ## Storage Adapter — Supabase Migration Path
 
 All persistence is abstracted behind `StorageAdapter` (see `src/storage/types.ts`).

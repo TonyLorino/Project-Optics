@@ -57,6 +57,7 @@ export function StateFilter({ selected, onChange }: StateFilterProps) {
         <button
           role="combobox"
           aria-expanded={open}
+          aria-label="Filter by state"
           data-slot="select-trigger"
           data-size="default"
           className={cn(

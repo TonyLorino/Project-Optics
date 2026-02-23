@@ -55,3 +55,6 @@ export const REFETCH_INTERVAL_MS = 3_600_000
 
 /** Storage key prefix */
 export const STORAGE_PREFIX = 'optics:'
+
+/** Default page size for paginated tables */
+export const TABLE_PAGE_SIZE = 20

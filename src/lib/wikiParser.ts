@@ -19,9 +19,13 @@ function splitSections(markdown: string): Map<string, string> {
   const matches = [...markdown.matchAll(headingRe)]
 
   for (let i = 0; i < matches.length; i++) {
-    const heading = matches[i][1].trim().toLowerCase()
-    const bodyStart = matches[i].index! + matches[i][0].length
-    const bodyEnd = i + 1 < matches.length ? matches[i + 1].index! : markdown.length
+    const match = matches[i]
+    if (!match) continue
+    const heading = match[1]?.trim().toLowerCase() ?? ''
+    const matchIndex = match.index ?? 0
+    const bodyStart = matchIndex + match[0].length
+    const nextMatch = matches[i + 1]
+    const bodyEnd = nextMatch != null ? (nextMatch.index ?? markdown.length) : markdown.length
     sections.set(heading, markdown.slice(bodyStart, bodyEnd).trim())
   }
 
@@ -40,8 +44,10 @@ function parseTable(body: string): Record<string, string> {
       .split('|')
       .map((c) => c.trim())
       .filter(Boolean)
-    if (cells.length >= 2) {
-      result[cells[0]] = cells[1]
+    const key = cells[0]
+    const value = cells[1]
+    if (key != null && value != null) {
+      result[key] = value
     }
   }
 
@@ -57,9 +63,8 @@ export function parseWikiPage(markdown: string): WikiProjectData | null {
 
   const sections = splitSections(markdown)
 
-  const fields = sections.has('project data')
-    ? parseTable(sections.get('project data')!)
-    : {}
+  const projectDataBody = sections.get('project data')
+  const fields = projectDataBody ? parseTable(projectDataBody) : {}
 
   const accomplishments = sections.get('accomplishments') ?? null
   const lookAheadKey = [...sections.keys()].find((k) =>

@@ -22,6 +22,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import type { WorkItem, WorkItemState } from '@/types/workItem'
 import { cn } from '@/lib/utils'
+import { TABLE_PAGE_SIZE } from '@/lib/constants'
 import { RAID_CATEGORY_COLORS, STATE_BG_CLASSES } from '@/lib/colors'
 import { StateFilter, ALL_STATES } from '@/components/dashboard/StateFilter'
 import { RaidTypeFilter } from './RaidTypeFilter'
@@ -32,7 +33,7 @@ import {
   type RaidCategory,
 } from '@/lib/raidHelpers'
 
-const PAGE_SIZE = 20
+const PAGE_SIZE = TABLE_PAGE_SIZE
 
 type SortKey = 'id' | 'title' | 'state' | 'category' | 'priority' | 'assignedTo' | 'age' | 'createdDate'
 type SortDir = 'asc' | 'desc'
@@ -51,6 +52,7 @@ interface RaidTableProps {
   workItems: WorkItem[]
   allWorkItems: WorkItem[]
   isLoading?: boolean
+  error?: Error | null
   organization?: string
 }
 
@@ -58,7 +60,8 @@ export function RaidTable({
   workItems,
   allWorkItems,
   isLoading,
-  organization = 'CorporateDataOffice',
+  error,
+  organization = import.meta.env.VITE_ADO_ORGANIZATION as string ?? 'CorporateDataOffice',
 }: RaidTableProps) {
   const [sortKey, setSortKey] = useState<SortKey>('createdDate')
   const [sortDir, setSortDir] = useState<SortDir>('desc')
@@ -167,7 +170,10 @@ export function RaidTable({
     className?: string
   }) {
     return (
-      <TableHead className={className}>
+      <TableHead
+        className={className}
+        aria-sort={sortKey === field ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none'}
+      >
         <button
           className="flex items-center gap-1 hover:text-foreground transition-colors"
           onClick={() => toggleSort(field)}
@@ -214,6 +220,11 @@ export function RaidTable({
             {Array.from({ length: 8 }).map((_, i) => (
               <Skeleton key={i} className="h-10 w-full" />
             ))}
+          </div>
+        ) : error ? (
+          <div className="h-32 flex flex-col items-center justify-center gap-1 text-sm">
+            <span className="text-destructive font-medium">Failed to load RAID items</span>
+            <span className="text-muted-foreground">{error.message}</span>
           </div>
         ) : !hasContent ? (
           <div className="h-32 flex items-center justify-center text-muted-foreground text-sm">

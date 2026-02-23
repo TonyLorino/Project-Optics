@@ -11,8 +11,12 @@ function key(suffix: string): string {
 function write(k: string, value: unknown): void {
   try {
     window.localStorage.setItem(k, JSON.stringify(value))
-  } catch {
-    console.warn(`[storage] Failed to write key "${k}"`)
+  } catch (err) {
+    if (err instanceof DOMException && err.name === 'QuotaExceededError') {
+      console.error(`[storage] Quota exceeded writing key "${k}" — consider clearing old data`)
+    } else {
+      console.warn(`[storage] Failed to write key "${k}"`, err)
+    }
   }
 }
 
@@ -20,7 +24,8 @@ function read<T>(k: string): T | null {
   try {
     const raw = window.localStorage.getItem(k)
     return raw ? (JSON.parse(raw) as T) : null
-  } catch {
+  } catch (err) {
+    console.warn(`[storage] Failed to parse key "${k}" — returning null`, err)
     return null
   }
 }

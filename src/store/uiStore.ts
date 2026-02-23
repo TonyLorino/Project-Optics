@@ -39,7 +39,9 @@ export const useUIStore = create<UIState>()(
       selectedSprint: null,
       selectedResource: null,
       showArchived: false,
-      darkMode: window.matchMedia('(prefers-color-scheme: dark)').matches,
+      darkMode: typeof window !== 'undefined'
+        ? window.matchMedia('(prefers-color-scheme: dark)').matches
+        : false,
       syncLastUpdated: undefined,
       syncIsFetching: false,
       syncRefetch: null,

@@ -15,15 +15,23 @@ export function useWorkItems(
   iterationPath?: string,
 ) {
   return useQuery({
-    queryKey: ['workItems', projectNames, iterationPath ?? '__all__'],
+    queryKey: ['workItems', [...projectNames].sort().join(','), iterationPath ?? '__all__'],
     queryFn: async (): Promise<WorkItem[]> => {
-      const results = await Promise.all(
+      const settled = await Promise.allSettled(
         projectNames.map((p) => fetchWorkItemsByProject(p, iterationPath)),
       )
-      return results.flat()
+      const items: WorkItem[] = []
+      for (const result of settled) {
+        if (result.status === 'fulfilled') {
+          items.push(...result.value)
+        } else {
+          console.warn('[useWorkItems] Project fetch failed:', result.reason)
+        }
+      }
+      return items
     },
     enabled: projectNames.length > 0,
-    staleTime: 60 * 1000,
+    staleTime: 60 * 1000, // Work items update frequently; 1 min freshness
     refetchInterval: REFETCH_INTERVAL_MS,
     refetchOnWindowFocus: true,
   })
