@@ -4,7 +4,7 @@ const ADO_BASE = 'https://dev.azure.com'
 
 const ALLOWED_METHODS = new Set(['GET', 'POST', 'PATCH', 'PUT', 'DELETE'])
 
-const HOP_BY_HOP = new Set([
+const STRIP_HEADERS = new Set([
   'connection',
   'keep-alive',
   'proxy-authenticate',
@@ -13,6 +13,7 @@ const HOP_BY_HOP = new Set([
   'trailer',
   'transfer-encoding',
   'upgrade',
+  'www-authenticate',
 ])
 
 export default async function handler(
@@ -33,13 +34,19 @@ export default async function handler(
     return
   }
 
-  // The rewrite passes the ADO sub-path as ?__path=...
-  // Original query params are also forwarded automatically by Vercel.
+  // Rewrite injects __path; remaining query params come from the original request
   const adoPath = (req.query.__path as string) ?? ''
 
-  const url = new URL(req.url!, `https://${req.headers.host}`)
-  url.searchParams.delete('__path')
-  const qs = url.search.replace(/^\?/, '').replace(/(?:^|&)__path=[^&]*/g, '').replace(/^&/, '')
+  // Rebuild query string from req.query (excluding the synthetic __path param)
+  const qsParts: string[] = []
+  for (const [key, val] of Object.entries(req.query)) {
+    if (key === '__path') continue
+    const values = Array.isArray(val) ? val : [val]
+    for (const v of values) {
+      if (v != null) qsParts.push(`${key}=${v}`)
+    }
+  }
+  const qs = qsParts.join('&')
 
   const targetUrl = `${ADO_BASE}/${org}/${adoPath}${qs ? `?${qs}` : ''}`
 
@@ -65,16 +72,14 @@ export default async function handler(
       body,
     })
 
-    res.status(upstream.status)
-
     for (const [key, value] of upstream.headers.entries()) {
-      if (!HOP_BY_HOP.has(key.toLowerCase())) {
+      if (!STRIP_HEADERS.has(key.toLowerCase())) {
         res.setHeader(key, value)
       }
     }
 
     const responseBody = await upstream.text()
-    res.send(responseBody)
+    res.status(upstream.status).send(responseBody)
   } catch (err) {
     console.error('[api/ado] Proxy error:', err)
     res.status(502).json({ error: 'Failed to reach Azure DevOps' })
