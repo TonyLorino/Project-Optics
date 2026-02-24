@@ -33,8 +33,9 @@ export default async function handler(
     return
   }
 
-  const rawPath = (req.url ?? '').replace(/^\/api\/ado\/?/, '')
-  const targetUrl = `${ADO_BASE}/${org}/${rawPath}`
+  // With a catch-all route, req.url contains the full original path + query string
+  const suffix = (req.url ?? '').replace(/^\/api\/ado\/?/, '')
+  const targetUrl = `${ADO_BASE}/${org}/${suffix}`
 
   const headers: Record<string, string> = {
     Authorization: `Basic ${Buffer.from(`:${pat}`).toString('base64')}`,

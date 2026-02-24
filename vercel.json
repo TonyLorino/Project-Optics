@@ -1,7 +1,4 @@
 {
   "buildCommand": "npm run build",
-  "outputDirectory": "dist",
-  "rewrites": [
-    { "source": "/api/ado/:path*", "destination": "/api/ado" }
-  ]
+  "outputDirectory": "dist"
 }
