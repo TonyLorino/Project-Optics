@@ -2,7 +2,6 @@
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "rewrites": [
-    { "source": "/api/ado/(.*)", "destination": "/api/ado?__path=$1" },
     { "source": "/((?!api/).*)", "destination": "/index.html" }
   ]
 }

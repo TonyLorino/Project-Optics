@@ -9,6 +9,11 @@ const BASE_BACKOFF_MS = 1_000
  * In development the Vite proxy rewrites `/api/ado/*` to
  * `https://dev.azure.com/<org>/*` and injects the PAT on the
  * server side so the token never leaves the backend process.
+ *
+ * In production a request interceptor moves the ADO sub-path into
+ * an `X-ADO-Path` header so every request hits the single `/api/ado`
+ * serverless function directly (Vercel does not route sub-paths
+ * under /api/ to rewrites).
  */
 export const adoClient = axios.create({
   baseURL: '/api/ado',
@@ -17,6 +22,14 @@ export const adoClient = axios.create({
     'Content-Type': 'application/json',
   },
 })
+
+if (import.meta.env.PROD) {
+  adoClient.interceptors.request.use((config) => {
+    config.headers['X-ADO-Path'] = config.url ?? ''
+    config.url = ''
+    return config
+  })
+}
 
 interface RetryMeta { _retryCount?: number }
 

@@ -34,21 +34,9 @@ export default async function handler(
     return
   }
 
-  // Rewrite injects __path; remaining query params come from the original request
-  const adoPath = (req.query.__path as string) ?? ''
-
-  // Rebuild query string from req.query (excluding the synthetic __path param)
-  const qsParts: string[] = []
-  for (const [key, val] of Object.entries(req.query)) {
-    if (key === '__path') continue
-    const values = Array.isArray(val) ? val : [val]
-    for (const v of values) {
-      if (v != null) qsParts.push(`${key}=${v}`)
-    }
-  }
-  const qs = qsParts.join('&')
-
-  const targetUrl = `${ADO_BASE}/${org}/${adoPath}${qs ? `?${qs}` : ''}`
+  // The frontend sends the full ADO sub-path (including query string) in this header
+  const adoSubPath = (req.headers['x-ado-path'] as string) ?? ''
+  const targetUrl = `${ADO_BASE}/${org}${adoSubPath}`
 
   const headers: Record<string, string> = {
     Authorization: `Basic ${Buffer.from(`:${pat}`).toString('base64')}`,
