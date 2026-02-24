@@ -71,6 +71,10 @@ export function TeamWorkload({ data, isLoading }: TeamWorkloadProps) {
                 <stop offset="0%" stopColor={STATE_COLORS.New} stopOpacity={0.5} />
                 <stop offset="100%" stopColor={STATE_COLORS.New} stopOpacity={0.9} />
               </linearGradient>
+              <linearGradient id="twCompleted" x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0%" stopColor="#c4b5fd" stopOpacity={0.5} />
+                <stop offset="100%" stopColor="#c4b5fd" stopOpacity={0.9} />
+              </linearGradient>
             </defs>
             <CartesianGrid
               strokeDasharray="3 3"
@@ -96,30 +100,42 @@ export function TeamWorkload({ data, isLoading }: TeamWorkloadProps) {
             <Tooltip
               content={<ChartTooltip formatRows={(p) =>
                 p?.map((e: { name?: string; value?: string | number; color?: string; payload?: Record<string, unknown>; dataKey?: string }) => {
-                  const label =
-                    e.dataKey === 'stories' ? 'Stories'
-                    : e.dataKey === 'storyPoints' ? 'Story Points'
-                    : 'Avg Velocity'
-                  const suffix = e.dataKey === 'avgVelocity' ? ' pts/sprint' : ''
-                  return { label, value: `${e.value}${suffix}` }
+                  const labels: Record<string, string> = {
+                    stories: 'Stories',
+                    completedStories: 'Completed Stories',
+                    storyPoints: 'Story Points',
+                    velocity: 'Velocity',
+                  }
+                  const suffix = e.dataKey === 'velocity' ? ' pts' : ''
+                  return { label: labels[e.dataKey ?? ''] ?? String(e.name), value: `${e.value}${suffix}` }
                 }) ?? []
               } />}
               cursor={false}
             />
             <Legend
-              formatter={(value) =>
-                value === 'stories'
-                  ? 'Stories'
-                  : value === 'storyPoints'
-                    ? 'Story Points'
-                    : 'Avg Velocity'
-              }
+              formatter={(value) => {
+                const labels: Record<string, string> = {
+                  stories: 'Stories',
+                  completedStories: 'Completed',
+                  storyPoints: 'Story Points',
+                  velocity: 'Velocity (pts)',
+                }
+                return labels[value] ?? value
+              }}
             />
             <Bar
               dataKey="stories"
               fill="url(#twStories)"
               radius={[0, 6, 6, 0]}
               name="stories"
+              animationDuration={600}
+              animationEasing="ease-out"
+            />
+            <Bar
+              dataKey="completedStories"
+              fill="url(#twVelocity)"
+              radius={[0, 6, 6, 0]}
+              name="completedStories"
               animationDuration={600}
               animationEasing="ease-out"
             />
@@ -132,10 +148,10 @@ export function TeamWorkload({ data, isLoading }: TeamWorkloadProps) {
               animationEasing="ease-out"
             />
             <Bar
-              dataKey="avgVelocity"
-              fill="url(#twVelocity)"
+              dataKey="velocity"
+              fill="url(#twCompleted)"
               radius={[0, 6, 6, 0]}
-              name="avgVelocity"
+              name="velocity"
               animationDuration={600}
               animationEasing="ease-out"
             />
