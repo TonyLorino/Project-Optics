@@ -292,9 +292,9 @@ export function Reports() {
                 </h2>
                 <div className="flex items-center gap-2 mt-1">
                   <StatusDot status={report.overallStatus} />
-                  <span className="text-sm text-muted-foreground font-medium">
+                  {/* <span className="text-sm text-muted-foreground font-medium">
                     {report.progressPercent}% complete
-                  </span>
+                  </span> */}
                 </div>
               </div>
               <div className="flex items-center gap-1.5">
