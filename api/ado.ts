@@ -6,6 +6,8 @@ const ALLOWED_METHODS = new Set(['GET', 'POST', 'PATCH', 'PUT', 'DELETE'])
 
 const STRIP_HEADERS = new Set([
   'connection',
+  'content-encoding',
+  'content-length',
   'keep-alive',
   'proxy-authenticate',
   'proxy-authorization',
@@ -34,13 +36,13 @@ export default async function handler(
     return
   }
 
-  // The frontend sends the full ADO sub-path (including query string) in this header
   const adoSubPath = (req.headers['x-ado-path'] as string) ?? ''
   const targetUrl = `${ADO_BASE}/${org}${adoSubPath}`
 
   const headers: Record<string, string> = {
     Authorization: `Basic ${Buffer.from(`:${pat}`).toString('base64')}`,
     Accept: 'application/json',
+    'Accept-Encoding': 'identity',
   }
 
   const contentType = req.headers['content-type']
@@ -66,8 +68,8 @@ export default async function handler(
       }
     }
 
-    const responseBody = await upstream.text()
-    res.status(upstream.status).send(responseBody)
+    const buf = Buffer.from(await upstream.arrayBuffer())
+    res.status(upstream.status).send(buf)
   } catch (err) {
     console.error('[api/ado] Proxy error:', err)
     res.status(502).json({ error: 'Failed to reach Azure DevOps' })
