@@ -29,6 +29,7 @@ import {
 import { useVelocity } from '@/hooks/useVelocity'
 import { useTeamWorkload } from '@/hooks/useTeamWorkload'
 import { useAreaPaths } from '@/hooks/useAreaPaths'
+import { useSprintTrends } from '@/hooks/useSprintTrends'
 import { useUIStore } from '@/store/uiStore'
 import { parseSelections, filterByAreaSelections } from '@/lib/selectionHelpers'
 
@@ -38,9 +39,11 @@ export function Dashboard() {
     selectedSprint,
     selectedResource,
     showArchived,
+    dateRange,
     setSelectedProjects,
     setSelectedSprint,
     setSelectedResource,
+    setDateRange,
     toggleArchived,
     setSyncState,
   } = useUIStore()
@@ -143,18 +146,39 @@ export function Dashboard() {
   }, [areaFilteredWorkItems])
 
   // Apply resource filter
-  const workItems = useMemo(
+  const resourceFilteredWorkItems = useMemo(
     () => selectedResource
       ? areaFilteredWorkItems.filter((wi) => wi.assignedTo?.uniqueName === selectedResource)
       : areaFilteredWorkItems,
     [areaFilteredWorkItems, selectedResource],
   )
-  const allWorkItems = useMemo(
+  const resourceFilteredAllWorkItems = useMemo(
     () => selectedResource
       ? areaFilteredAllWorkItems.filter((wi) => wi.assignedTo?.uniqueName === selectedResource)
       : areaFilteredAllWorkItems,
     [areaFilteredAllWorkItems, selectedResource],
   )
+
+  // Apply date range filter
+  const workItems = useMemo(() => {
+    if (!dateRange) return resourceFilteredWorkItems
+    const from = new Date(dateRange.from).getTime()
+    const to = new Date(dateRange.to).getTime() + 86_400_000
+    return resourceFilteredWorkItems.filter((wi) => {
+      const d = new Date(wi.changedDate).getTime()
+      return d >= from && d < to
+    })
+  }, [resourceFilteredWorkItems, dateRange])
+
+  const allWorkItems = useMemo(() => {
+    if (!dateRange) return resourceFilteredAllWorkItems
+    const from = new Date(dateRange.from).getTime()
+    const to = new Date(dateRange.to).getTime() + 86_400_000
+    return resourceFilteredAllWorkItems.filter((wi) => {
+      const d = new Date(wi.changedDate).getTime()
+      return d >= from && d < to
+    })
+  }, [resourceFilteredAllWorkItems, dateRange])
 
   // ── Error toasts ──────────────────────────────────────────
 
@@ -182,6 +206,7 @@ export function Dashboard() {
     iterations,
   )
   const teamWorkload = useTeamWorkload(workItems, iterations)
+  const sprintTrends = useSprintTrends(workItems, iterations)
 
   const currentSprint = iterations.find((s) => s.timeFrame === 'current')
 
@@ -240,10 +265,12 @@ export function Dashboard() {
         selectedResource={selectedResource}
         showArchived={showArchived}
         areaPaths={areaPaths}
+        dateRange={dateRange}
         onProjectsChange={setSelectedProjects}
         onSprintChange={setSelectedSprint}
         onResourceChange={setSelectedResource}
         onToggleArchived={toggleArchived}
+        onDateRangeChange={setDateRange}
       />
 
       {/* KPI cards */}
@@ -263,6 +290,7 @@ export function Dashboard() {
             label="Active Items"
             value={metrics.activeItemCount}
             subtitle={`${metrics.newCount} new · ${metrics.resolvedCount} resolved · ${metrics.totalItems} total`}
+            trend={sprintTrends.activeItems}
             isLoading={isLoading}
           />,
           <MetricCard
@@ -271,6 +299,7 @@ export function Dashboard() {
             label="Story Points"
             value={metrics.activeStoryPoints.toLocaleString()}
             subtitle={`${metrics.completedStoryPoints.toLocaleString()} completed · ${metrics.totalStoryPoints.toLocaleString()} all-time`}
+            trend={sprintTrends.storyPoints}
             isLoading={isLoading}
           />,
           <MetricCard
@@ -279,6 +308,7 @@ export function Dashboard() {
             label="Avg Velocity"
             value={averageVelocity}
             subtitle={`Per sprint (last 6) · ${metrics.completedStoryPoints.toLocaleString()} pts completed`}
+            trend={sprintTrends.velocity}
             isLoading={isLoading}
           />,
           <MetricCard
@@ -287,6 +317,7 @@ export function Dashboard() {
             label="Avg Cycle Time"
             value={`${metrics.averageCycleTimeDays}d`}
             subtitle={`Activation to close · ${metrics.cycleTimeItemCount} items measured`}
+            trend={sprintTrends.cycleTime}
             isLoading={isLoading}
           />,
         ].map((card, i) => (

@@ -12,6 +12,7 @@ interface UIState {
   selectedSprint: string | null
   selectedResource: string | null
   showArchived: boolean
+  dateRange: { from: string; to: string } | null
 
   // Appearance
   darkMode: boolean
@@ -26,6 +27,7 @@ interface UIState {
   setSelectedProjects: (projects: string[]) => void
   setSelectedSprint: (sprint: string | null) => void
   setSelectedResource: (resource: string | null) => void
+  setDateRange: (range: { from: string; to: string } | null) => void
   toggleArchived: () => void
   toggleDarkMode: () => void
   setSyncState: (lastUpdated: Date | undefined, isFetching: boolean, refetch: () => void) => void
@@ -39,6 +41,7 @@ export const useUIStore = create<UIState>()(
       selectedSprint: null,
       selectedResource: null,
       showArchived: false,
+      dateRange: null,
       darkMode: typeof window !== 'undefined'
         ? window.matchMedia('(prefers-color-scheme: dark)').matches
         : false,
@@ -50,6 +53,7 @@ export const useUIStore = create<UIState>()(
       setSelectedProjects: (projects) => set({ selectedProjects: projects }),
       setSelectedSprint: (sprint) => set({ selectedSprint: sprint }),
       setSelectedResource: (resource) => set({ selectedResource: resource }),
+      setDateRange: (range) => set({ dateRange: range }),
       toggleArchived: () =>
         set((s) => ({ showArchived: !s.showArchived })),
       toggleDarkMode: () =>
@@ -65,6 +69,7 @@ export const useUIStore = create<UIState>()(
         selectedSprint: state.selectedSprint,
         selectedResource: state.selectedResource,
         showArchived: state.showArchived,
+        dateRange: state.dateRange,
         darkMode: state.darkMode,
       }),
     },

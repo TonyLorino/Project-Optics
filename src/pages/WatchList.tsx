@@ -12,6 +12,10 @@ import { MetricCard } from '@/components/dashboard/MetricCard'
 import { DashboardError } from '@/components/dashboard/DashboardError'
 import { RaidTypeChart } from '@/components/watchlist/RaidTypeChart'
 import { RaidAgeChart } from '@/components/watchlist/RaidAgeChart'
+import { RaidStateChart } from '@/components/watchlist/RaidStateChart'
+import { RaidAssigneeChart } from '@/components/watchlist/RaidAssigneeChart'
+import { RaidTrendChart } from '@/components/watchlist/RaidTrendChart'
+import { RaidProjectChart } from '@/components/watchlist/RaidProjectChart'
 import { RaidTable } from '@/components/watchlist/RaidTable'
 import { useProjects } from '@/hooks/useProjects'
 import { useWorkItems } from '@/hooks/useWorkItems'
@@ -30,9 +34,11 @@ export function WatchList() {
     selectedSprint,
     selectedResource,
     showArchived,
+    dateRange,
     setSelectedProjects,
     setSelectedSprint,
     setSelectedResource,
+    setDateRange,
     toggleArchived,
     setSyncState,
   } = useUIStore()
@@ -118,12 +124,22 @@ export function WatchList() {
     )
   }, [areaFilteredWorkItems])
 
-  const workItems = useMemo(
+  const resourceFilteredWorkItems = useMemo(
     () => selectedResource
       ? areaFilteredWorkItems.filter((wi) => wi.assignedTo?.uniqueName === selectedResource)
       : areaFilteredWorkItems,
     [areaFilteredWorkItems, selectedResource],
   )
+
+  const workItems = useMemo(() => {
+    if (!dateRange) return resourceFilteredWorkItems
+    const from = new Date(dateRange.from).getTime()
+    const to = new Date(dateRange.to).getTime() + 86_400_000
+    return resourceFilteredWorkItems.filter((wi) => {
+      const d = new Date(wi.changedDate).getTime()
+      return d >= from && d < to
+    })
+  }, [resourceFilteredWorkItems, dateRange])
 
   useEffect(() => {
     if (workItemsError) {
@@ -194,10 +210,12 @@ export function WatchList() {
         selectedResource={selectedResource}
         showArchived={showArchived}
         areaPaths={areaPaths}
+        dateRange={dateRange}
         onProjectsChange={setSelectedProjects}
         onSprintChange={setSelectedSprint}
         onResourceChange={setSelectedResource}
         onToggleArchived={toggleArchived}
+        onDateRangeChange={setDateRange}
       />
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -254,6 +272,10 @@ export function WatchList() {
       >
         <RaidTypeChart data={typeDistribution} isLoading={isLoading} />
         <RaidAgeChart workItems={workItems} isLoading={isLoading} />
+        <RaidStateChart workItems={workItems} isLoading={isLoading} />
+        <RaidAssigneeChart workItems={workItems} isLoading={isLoading} />
+        <RaidTrendChart workItems={workItems} isLoading={isLoading} />
+        <RaidProjectChart workItems={workItems} isLoading={isLoading} />
       </motion.div>
 
       <motion.div

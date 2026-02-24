@@ -11,10 +11,12 @@
 
 ## Features
 
-- **Dashboard** — KPI cards (active projects, active items, story points, velocity, cycle time), sprint burndown, velocity chart, team workload, state & type distribution, sortable work-items table, and a Gantt timeline with inherited end-date resolution
-- **Watch List** — RAID (Risk, Assumption, Issue, Dependency) tracking with type distribution and age distribution charts, metric cards, and a sortable table with parent work-item context
+- **Dashboard** — KPI cards with sprint-over-sprint trend badges (active projects, active items, story points, velocity, cycle time), sprint burndown, velocity chart, team workload, state & type distribution, sortable work-items table, and a Gantt timeline with inherited end-date resolution
+- **Watch List** — RAID (Risk, Assumption, Issue, Dependency) tracking with six charts (type distribution, age distribution, state donut, top assignees, created vs resolved trend, project breakdown), metric cards, and a sortable table with parent work-item context
 - **Reports** — per-project exportable reports with accomplishments, look-ahead, milestones, and watch list items; single-project enforcement with multi-area-path support
-- **Filters** — slice data by project, area path, sprint, resource, and state
+- **Filters** — slice data by project, area path, sprint, resource, date range, and state
+- **URL Deep-Linking** — filter state is encoded in the URL hash for shareable, bookmarkable views
+- **Code Splitting** — pages are lazily loaded via `React.lazy` + `Suspense` for faster initial load
 
 ## Tech Stack
 

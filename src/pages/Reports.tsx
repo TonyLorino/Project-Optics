@@ -53,9 +53,11 @@ export function Reports() {
     selectedSprint,
     selectedResource,
     showArchived,
+    dateRange,
     setSelectedProjects,
     setSelectedSprint,
     setSelectedResource,
+    setDateRange,
     toggleArchived,
     setSyncState,
   } = useUIStore()
@@ -143,12 +145,23 @@ export function Reports() {
   }, [areaFilteredWorkItems])
 
   // Apply resource filter
-  const workItems = useMemo(
+  const resourceFilteredWorkItems = useMemo(
     () => selectedResource
       ? areaFilteredWorkItems.filter((wi) => wi.assignedTo?.uniqueName === selectedResource)
       : areaFilteredWorkItems,
     [areaFilteredWorkItems, selectedResource],
   )
+
+  // Apply date range filter
+  const workItems = useMemo(() => {
+    if (!dateRange) return resourceFilteredWorkItems
+    const from = new Date(dateRange.from).getTime()
+    const to = new Date(dateRange.to).getTime() + 86_400_000
+    return resourceFilteredWorkItems.filter((wi) => {
+      const d = new Date(wi.changedDate).getTime()
+      return d >= from && d < to
+    })
+  }, [resourceFilteredWorkItems, dateRange])
 
   useEffect(() => {
     if (workItemsError) {
@@ -268,10 +281,12 @@ export function Reports() {
         selectedResource={selectedResource}
         showArchived={showArchived}
         areaPaths={areaPaths}
+        dateRange={dateRange}
         onProjectsChange={setSelectedProjects}
         onSprintChange={setSelectedSprint}
         onResourceChange={setSelectedResource}
         onToggleArchived={toggleArchived}
+        onDateRangeChange={setDateRange}
       />
 
       {/* Loading state */}

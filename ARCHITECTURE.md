@@ -24,9 +24,9 @@ src/
 ├── components/
 │   ├── ui/              # shadcn/ui primitives (auto-generated)
 │   ├── dashboard/       # Dashboard page widgets (charts, tables, metrics)
-│   ├── watchlist/       # Watch List page widgets (RaidTable, type chart, age chart)
+│   ├── watchlist/       # Watch List page widgets (RaidTable, type/age/state/assignee/trend/project charts)
 │   ├── reports/         # Reports page widgets (ReportSlide)
-│   ├── filters/         # Project / Sprint / State selectors
+│   ├── filters/         # Project / Sprint / Resource / DateRange selectors
 │   ├── layout/          # AppLayout, Sidebar, Header
 │   └── ErrorBoundary.tsx
 ├── hooks/               # React Query + derived-data hooks
@@ -45,8 +45,8 @@ src/
 
 ## Pages
 
-- **Dashboard** — Five KPI cards (Active Projects, Active Items, Story Points, Avg Velocity, Avg Cycle Time) with enriched subtitles, sprint burndown, velocity chart, team workload, state distribution, work-item type breakdown, sortable/paginated work-items table, and a Gantt timeline that inherits end dates from the parent chain when an item lacks its own.
-- **Watch List** — Tracks Risks, Issues, Dependencies, and Decisions (RAID items) linked to ADO work items. Includes Watch List Distribution (type) and Watch List Age (age-bucket bar chart) in a two-column layout, metric cards, and a sortable table with parent work-item context.
+- **Dashboard** — Five KPI cards (Active Projects, Active Items, Story Points, Avg Velocity, Avg Cycle Time) with sprint-over-sprint trend badges, sprint burndown, velocity chart, team workload, state distribution, work-item type breakdown, sortable/paginated work-items table, and a Gantt timeline that inherits end dates from the parent chain when an item lacks its own. Pages are code-split with `React.lazy` + `Suspense`.
+- **Watch List** — Tracks Risks, Issues, Dependencies, and Decisions (RAID items) linked to ADO work items. Six charts in a 2×3 grid: Watch List Distribution (type), Watch List Age (age-bucket bar), Watch List by State (donut), Watch List by Assignee (horizontal bar, top 8), Created vs Resolved (dual-area trend, last 12 weeks), and Watch List by Project (vertical bar). Metric cards and a sortable table with parent work-item context.
 - **Reports** — Per-project exportable sprint reports with accomplishments, look-ahead, milestones, and linked watch list items. Enforces single-project selection (shows an info box when multiple projects are selected). Multiple area paths of the same project are supported, with comma-separated area names in the title. Supports image export via offscreen slide rendering.
 
 ## ADO Integration
@@ -70,12 +70,30 @@ This ensures RAID items, tasks, and other leaf nodes inherit meaningful timeline
 
 ## Dashboard KPIs
 
-Five metric cards powered by `useMetrics`:
-- **Active Projects** — count of selected/visible projects, with archived and total counts.
-- **Active Items** — items in Active state, with new, resolved, and total counts.
-- **Story Points** — active (in-progress) story points as the primary value, completed and all-time totals in subtitle.
-- **Avg Velocity** — points per sprint over the last 6 sprints, with total completed points.
-- **Avg Cycle Time** — average days from activation to close, with the number of items measured.
+Five metric cards powered by `useMetrics` and `useSprintTrends`:
+- **Active Projects** — count of selected/visible projects, with archived and total counts (no trend).
+- **Active Items** — items in Active state, with new, resolved, and total counts. Trend badge shows % change vs previous sprint.
+- **Story Points** — active (in-progress) story points as the primary value, completed and all-time totals in subtitle. Trend badge shows % change vs previous sprint.
+- **Avg Velocity** — points per sprint over the last 6 sprints, with total completed points. Trend badge shows % change vs previous sprint.
+- **Avg Cycle Time** — average days from activation to close, with the number of items measured. Trend badge shows inverted % change vs previous sprint (lower is better).
+
+## URL Deep-Linking
+
+`useHashSync` (called in `App.tsx`) reads/writes the Zustand filter state to `window.location.hash`:
+
+```
+#page=dashboard&projects=ProjectA,ProjectB%5CArea1&sprint=__current__&resource=user@email.com&from=2026-01-15&to=2026-02-15
+```
+
+On mount the hash takes precedence over localStorage. On store change the hash is updated via `history.replaceState`. The `hashchange` event syncs browser back/forward into the store.
+
+## Code Splitting
+
+Page components (`Dashboard`, `WatchList`, `Reports`) are loaded via `React.lazy` + `Suspense` in `App.tsx`. Vite automatically creates separate JS chunks at dynamic `import()` boundaries.
+
+## Custom Date-Range Filtering
+
+A `DateRangeSelector` component (using shadcn `Calendar` in range mode with `react-day-picker`) lets users filter work items by `changedDate` to a custom window. The date range is stored in `uiStore`, serialized to the URL hash, and applied client-side after area-path and resource filtering on all three pages.
 
 ## Error Handling
 
@@ -170,4 +188,6 @@ Store these in `.env.local` (git-ignored).
 - **Supabase backend** — Replace localStorage with Supabase (see migration path above) to enable multi-user persistence and real-time collaboration.
 - **Settings page** — PAT management, theme preferences, notification config.
 - **% Complete metric** — Progress percentage calculation on the Reports page (currently commented out pending rework).
-- **Additional Watch List charts** — Candidates include state breakdown, assignee distribution, created-vs-resolved trend, and per-project distribution.
+- **Snapshot-based trends** — Store periodic metric snapshots (e.g. weekly) in localStorage / Supabase for week-over-week trend analysis beyond sprint boundaries.
+- **Export & sharing** — CSV/PDF export for dashboards and watch lists, shareable report links.
+- **Notifications** — Browser/email alerts for RAID item state changes or missed deadlines.
