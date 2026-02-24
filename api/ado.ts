@@ -33,9 +33,15 @@ export default async function handler(
     return
   }
 
-  // With a catch-all route, req.url contains the full original path + query string
-  const suffix = (req.url ?? '').replace(/^\/api\/ado\/?/, '')
-  const targetUrl = `${ADO_BASE}/${org}/${suffix}`
+  // The rewrite passes the ADO sub-path as ?__path=...
+  // Original query params are also forwarded automatically by Vercel.
+  const adoPath = (req.query.__path as string) ?? ''
+
+  const url = new URL(req.url!, `https://${req.headers.host}`)
+  url.searchParams.delete('__path')
+  const qs = url.search.replace(/^\?/, '').replace(/(?:^|&)__path=[^&]*/g, '').replace(/^&/, '')
+
+  const targetUrl = `${ADO_BASE}/${org}/${adoPath}${qs ? `?${qs}` : ''}`
 
   const headers: Record<string, string> = {
     Authorization: `Basic ${Buffer.from(`:${pat}`).toString('base64')}`,
