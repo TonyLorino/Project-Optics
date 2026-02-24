@@ -26,7 +26,7 @@ export function RaidTypeChart({ data, isLoading }: RaidTypeChartProps) {
     return (
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">RAID Type Distribution</CardTitle>
+          <CardTitle className="text-base">Watch List Distribution</CardTitle>
         </CardHeader>
         <CardContent>
           <Skeleton className="h-[250px] w-full" />
@@ -39,7 +39,7 @@ export function RaidTypeChart({ data, isLoading }: RaidTypeChartProps) {
     return (
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">RAID Type Distribution</CardTitle>
+          <CardTitle className="text-base">Watch List Distribution</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="h-[250px] flex items-center justify-center text-muted-foreground text-sm">
@@ -53,7 +53,7 @@ export function RaidTypeChart({ data, isLoading }: RaidTypeChartProps) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-base">RAID Type Distribution</CardTitle>
+        <CardTitle className="text-base">Watch List Distribution</CardTitle>
       </CardHeader>
       <CardContent>
         <ResponsiveContainer width="100%" height={250}>

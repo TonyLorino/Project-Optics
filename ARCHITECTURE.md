@@ -24,7 +24,7 @@ src/
 ├── components/
 │   ├── ui/              # shadcn/ui primitives (auto-generated)
 │   ├── dashboard/       # Dashboard page widgets (charts, tables, metrics)
-│   ├── watchlist/       # Watch List page widgets (RaidTable, type chart)
+│   ├── watchlist/       # Watch List page widgets (RaidTable, type chart, age chart)
 │   ├── reports/         # Reports page widgets (ReportSlide)
 │   ├── filters/         # Project / Sprint / State selectors
 │   ├── layout/          # AppLayout, Sidebar, Header
@@ -45,9 +45,9 @@ src/
 
 ## Pages
 
-- **Dashboard** — Real-time metrics, sprint burndown, velocity chart, team workload, state distribution, work-item type breakdown, and a sortable/paginated work-items table with Gantt timeline view.
-- **Watch List** — Tracks Risks, Issues, Dependencies, and Decisions (RAID items) linked to ADO work items. Includes type distribution chart, metric cards, and a sortable table with parent work-item context.
-- **Reports** — Per-project exportable sprint reports with accomplishments, look-ahead, milestones, and linked watch list items. Supports image export via offscreen slide rendering.
+- **Dashboard** — Five KPI cards (Active Projects, Active Items, Story Points, Avg Velocity, Avg Cycle Time) with enriched subtitles, sprint burndown, velocity chart, team workload, state distribution, work-item type breakdown, sortable/paginated work-items table, and a Gantt timeline that inherits end dates from the parent chain when an item lacks its own.
+- **Watch List** — Tracks Risks, Issues, Dependencies, and Decisions (RAID items) linked to ADO work items. Includes Watch List Distribution (type) and Watch List Age (age-bucket bar chart) in a two-column layout, metric cards, and a sortable table with parent work-item context.
+- **Reports** — Per-project exportable sprint reports with accomplishments, look-ahead, milestones, and linked watch list items. Enforces single-project selection (shows an info box when multiple projects are selected). Multiple area paths of the same project are supported, with comma-separated area names in the title. Supports image export via offscreen slide rendering.
 
 ## ADO Integration
 
@@ -58,6 +58,24 @@ src/
 - Work-item detail fetches are batched in groups of 200 (ADO max).
 - The Axios client enforces a 30-second timeout and retries 429 (rate-limit) responses with exponential backoff (up to 2 retries).
 - WIQL query inputs are sanitized (single-quote escaping) to prevent injection.
+
+## Gantt Timeline — Inherited End Dates
+
+The Gantt chart determines bar end dates with a parent-chain lookup:
+1. Use the item's own `closedDate` or `targetDate` if present.
+2. Otherwise walk up the `parentId` chain (with cycle guard) to find the first ancestor with a viable end date.
+3. Fall back to today only if no ancestor has a date either.
+
+This ensures RAID items, tasks, and other leaf nodes inherit meaningful timelines from their parent features or user stories.
+
+## Dashboard KPIs
+
+Five metric cards powered by `useMetrics`:
+- **Active Projects** — count of selected/visible projects, with archived and total counts.
+- **Active Items** — items in Active state, with new, resolved, and total counts.
+- **Story Points** — active (in-progress) story points as the primary value, completed and all-time totals in subtitle.
+- **Avg Velocity** — points per sprint over the last 6 sprints, with total completed points.
+- **Avg Cycle Time** — average days from activation to close, with the number of items measured.
 
 ## Error Handling
 
@@ -151,4 +169,5 @@ Store these in `.env.local` (git-ignored).
 
 - **Supabase backend** — Replace localStorage with Supabase (see migration path above) to enable multi-user persistence and real-time collaboration.
 - **Settings page** — PAT management, theme preferences, notification config.
-- **% Complete metric** — Progress percentage calculation on the Reports page (currently disabled pending rework).
+- **% Complete metric** — Progress percentage calculation on the Reports page (currently commented out pending rework).
+- **Additional Watch List charts** — Candidates include state breakdown, assignee distribution, created-vs-resolved trend, and per-project distribution.

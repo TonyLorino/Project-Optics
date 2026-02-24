@@ -1,9 +1,11 @@
 export interface DashboardMetrics {
   activeItemCount: number
   totalStoryPoints: number
+  activeStoryPoints: number
   completedStoryPoints: number
   velocityAverage: number
   averageCycleTimeDays: number
+  cycleTimeItemCount: number
   totalItems: number
   newCount: number
   resolvedCount: number

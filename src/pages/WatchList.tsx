@@ -11,6 +11,7 @@ import { FilterBar } from '@/components/filters/FilterBar'
 import { MetricCard } from '@/components/dashboard/MetricCard'
 import { DashboardError } from '@/components/dashboard/DashboardError'
 import { RaidTypeChart } from '@/components/watchlist/RaidTypeChart'
+import { RaidAgeChart } from '@/components/watchlist/RaidAgeChart'
 import { RaidTable } from '@/components/watchlist/RaidTable'
 import { useProjects } from '@/hooks/useProjects'
 import { useWorkItems } from '@/hooks/useWorkItems'
@@ -246,11 +247,13 @@ export function WatchList() {
       </div>
 
       <motion.div
+        className="grid grid-cols-1 lg:grid-cols-2 gap-4"
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.25, duration: 0.3, ease: 'easeOut' }}
       >
         <RaidTypeChart data={typeDistribution} isLoading={isLoading} />
+        <RaidAgeChart workItems={workItems} isLoading={isLoading} />
       </motion.div>
 
       <motion.div

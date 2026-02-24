@@ -4,6 +4,7 @@ import {
   Target,
   Zap,
   Clock,
+  FolderOpen,
 } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { toast } from 'sonner'
@@ -246,22 +247,30 @@ export function Dashboard() {
       />
 
       {/* KPI cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
         {[
+          <MetricCard
+            key="projects"
+            icon={<FolderOpen className="h-5 w-5" />}
+            label="Active Projects"
+            value={activeProjectNames.length}
+            subtitle={`${projects.filter((p) => p.isArchived).length} archived / ${projects.length} total`}
+            isLoading={isLoading}
+          />,
           <MetricCard
             key="active"
             icon={<Activity className="h-5 w-5" />}
             label="Active Items"
             value={metrics.activeItemCount}
-            subtitle={`${metrics.totalItems} total across ${activeProjectNames.length} project${activeProjectNames.length !== 1 ? 's' : ''}`}
+            subtitle={`${metrics.newCount} new · ${metrics.resolvedCount} resolved · ${metrics.totalItems} total`}
             isLoading={isLoading}
           />,
           <MetricCard
             key="sp"
             icon={<Target className="h-5 w-5" />}
             label="Story Points"
-            value={metrics.totalStoryPoints.toLocaleString()}
-            subtitle={`${metrics.completedStoryPoints.toLocaleString()} completed`}
+            value={metrics.activeStoryPoints.toLocaleString()}
+            subtitle={`${metrics.completedStoryPoints.toLocaleString()} completed · ${metrics.totalStoryPoints.toLocaleString()} all-time`}
             isLoading={isLoading}
           />,
           <MetricCard
@@ -269,7 +278,7 @@ export function Dashboard() {
             icon={<Zap className="h-5 w-5" />}
             label="Avg Velocity"
             value={averageVelocity}
-            subtitle="Points per sprint (last 6)"
+            subtitle={`Per sprint (last 6) · ${metrics.completedStoryPoints.toLocaleString()} pts completed`}
             isLoading={isLoading}
           />,
           <MetricCard
@@ -277,7 +286,7 @@ export function Dashboard() {
             icon={<Clock className="h-5 w-5" />}
             label="Avg Cycle Time"
             value={`${metrics.averageCycleTimeDays}d`}
-            subtitle="Activation to close"
+            subtitle={`Activation to close · ${metrics.cycleTimeItemCount} items measured`}
             isLoading={isLoading}
           />,
         ].map((card, i) => (

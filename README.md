@@ -11,10 +11,10 @@
 
 ## Features
 
-- **Dashboard** — real-time metrics, work-item breakdowns, sprint burndown, and velocity charts
-- **Watch List** — RAID log (Risk, Assumption, Issue, Dependency) tracking linked to ADO work items
-- **Reports** — exportable sprint reports and health summaries
-- **Filters** — slice data by project, sprint, resource, and state
+- **Dashboard** — KPI cards (active projects, active items, story points, velocity, cycle time), sprint burndown, velocity chart, team workload, state & type distribution, sortable work-items table, and a Gantt timeline with inherited end-date resolution
+- **Watch List** — RAID (Risk, Assumption, Issue, Dependency) tracking with type distribution and age distribution charts, metric cards, and a sortable table with parent work-item context
+- **Reports** — per-project exportable reports with accomplishments, look-ahead, milestones, and watch list items; single-project enforcement with multi-area-path support
+- **Filters** — slice data by project, area path, sprint, resource, and state
 
 ## Tech Stack
 

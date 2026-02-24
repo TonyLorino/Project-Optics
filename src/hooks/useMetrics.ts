@@ -22,6 +22,9 @@ export function useMetrics(workItems: WorkItem[]): DashboardMetrics {
       (sum, w) => sum + (w.storyPoints ?? 0),
       0,
     )
+    const activeStoryPoints = workItems
+      .filter((w) => w.state === 'Active')
+      .reduce((sum, w) => sum + (w.storyPoints ?? 0), 0)
     const completedItems = workItems.filter(
       (w) => w.state === 'Closed' || w.state === 'Resolved',
     )
@@ -46,9 +49,11 @@ export function useMetrics(workItems: WorkItem[]): DashboardMetrics {
     return {
       activeItemCount: activeCount,
       totalStoryPoints,
+      activeStoryPoints,
       completedStoryPoints,
       velocityAverage: 0, // calculated by useVelocity
       averageCycleTimeDays: Math.round(averageCycleTimeDays),
+      cycleTimeItemCount: cycleTimes.length,
       totalItems: workItems.length,
       newCount,
       resolvedCount,

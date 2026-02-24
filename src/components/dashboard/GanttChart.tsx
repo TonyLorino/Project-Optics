@@ -56,9 +56,27 @@ function getStartDate(item: WorkItem): Date {
   return parseISO(item.activatedDate ?? item.createdDate)
 }
 
-function getEndDate(item: WorkItem): Date {
+function findInheritedEndDate(item: WorkItem, lookup: Map<number, WorkItem>): Date | null {
+  const visited = new Set<number>()
+  let current: WorkItem | undefined = item
+  while (current?.parentId != null && !visited.has(current.parentId)) {
+    visited.add(current.parentId)
+    const parent = lookup.get(current.parentId)
+    if (!parent) break
+    if (parent.closedDate) return parseISO(parent.closedDate)
+    if (parent.targetDate) return parseISO(parent.targetDate)
+    current = parent
+  }
+  return null
+}
+
+function getEndDate(item: WorkItem, lookup?: Map<number, WorkItem>): Date {
   if (item.closedDate) return parseISO(item.closedDate)
   if (item.targetDate) return parseISO(item.targetDate)
+  if (lookup) {
+    const inherited = findInheritedEndDate(item, lookup)
+    if (inherited) return inherited
+  }
   return new Date()
 }
 
@@ -82,6 +100,12 @@ export function GanttChart({ workItems, isLoading, error }: GanttChartProps) {
   const [selectedStates, setSelectedStates] = useState<Set<WorkItemState>>(() => new Set(ALL_STATES))
   const containerRef = useRef<HTMLDivElement>(null)
 
+  const parentLookup = useMemo(() => {
+    const map = new Map<number, WorkItem>()
+    for (const wi of workItems) map.set(wi.id, wi)
+    return map
+  }, [workItems])
+
   const stateFilteredItems = useMemo(() => {
     if (selectedStates.size === ALL_STATES.length) return workItems
     return workItems.filter((wi) => selectedStates.has(wi.state as WorkItemState))
@@ -104,7 +128,7 @@ export function GanttChart({ workItems, isLoading, error }: GanttChartProps) {
     function walkNodes(nodes: TreeNode[], min: { v: number }, max: { v: number }): void {
       for (const node of nodes) {
         const s = getStartDate(node.item).getTime()
-        const e = getEndDate(node.item).getTime()
+        const e = getEndDate(node.item, parentLookup).getTime()
         if (s < min.v) min.v = s
         if (e > max.v) max.v = e
         if (node.children.length > 0) walkNodes(node.children, min, max)
@@ -120,7 +144,7 @@ export function GanttChart({ workItems, isLoading, error }: GanttChartProps) {
       }
     }
     return ranges
-  }, [groups])
+  }, [groups, parentLookup])
 
   const visibleRows = useMemo(
     () => flattenGroupedTree(groups, expandedIds),
@@ -135,7 +159,7 @@ export function GanttChart({ workItems, isLoading, error }: GanttChartProps) {
     for (const row of visibleRows) {
       if (row.kind === 'item') {
         const s = getStartDate(row.item).getTime()
-        const e = getEndDate(row.item).getTime()
+        const e = getEndDate(row.item, parentLookup).getTime()
         if (s < minDate) minDate = s
         if (e > maxDate) maxDate = e
       } else {
@@ -153,7 +177,7 @@ export function GanttChart({ workItems, isLoading, error }: GanttChartProps) {
     const padded_end = addDays(new Date(maxDate), PADDING_DAYS)
     const days = Math.max(differenceInCalendarDays(padded_end, padded_start), 14)
     return { rangeStart: padded_start, totalDays: days }
-  }, [visibleRows, groupDateRanges])
+  }, [visibleRows, groupDateRanges, parentLookup])
 
   const timelineWidth = totalDays * pxPerDay
 
@@ -464,7 +488,7 @@ export function GanttChart({ workItems, isLoading, error }: GanttChartProps) {
 
                   const { item, depth } = row
                   const startDays = differenceInCalendarDays(getStartDate(item), rangeStart)
-                  const endDays = differenceInCalendarDays(getEndDate(item), rangeStart)
+                  const endDays = differenceInCalendarDays(getEndDate(item, parentLookup), rangeStart)
                   const barLeft = Math.max(0, startDays * pxPerDay)
                   const barWidth = Math.max(4, (endDays - Math.max(0, startDays)) * pxPerDay)
                   const color = getWorkItemColor(item)
@@ -527,11 +551,16 @@ export function GanttChart({ workItems, isLoading, error }: GanttChartProps) {
                 </span>
                 <span>End</span>
                 <span className="text-foreground">
-                  {tooltip.item.closedDate
-                    ? format(parseISO(tooltip.item.closedDate), 'MMM d, yyyy')
-                    : tooltip.item.targetDate
-                      ? `${format(parseISO(tooltip.item.targetDate), 'MMM d, yyyy')} (target)`
-                      : 'In progress'}
+                  {(() => {
+                    if (tooltip.item.closedDate)
+                      return format(parseISO(tooltip.item.closedDate), 'MMM d, yyyy')
+                    if (tooltip.item.targetDate)
+                      return `${format(parseISO(tooltip.item.targetDate), 'MMM d, yyyy')} (target)`
+                    const inherited = findInheritedEndDate(tooltip.item, parentLookup)
+                    if (inherited)
+                      return `${format(inherited, 'MMM d, yyyy')} (inherited)`
+                    return 'In progress'
+                  })()}
                 </span>
                 {tooltip.item.assignedTo && (
                   <>

@@ -22,7 +22,7 @@ import { useProjectReport } from '@/hooks/useProjectReport'
 import { useProjectWiki } from '@/hooks/useProjectWiki'
 import { useAreaPaths } from '@/hooks/useAreaPaths'
 import { useUIStore } from '@/store/uiStore'
-import { parseSelections, filterByAreaSelections, getProjectNameFromSelection, getAreaNameFromSelection } from '@/lib/selectionHelpers'
+import { parseSelections, filterByAreaSelections, getAreaNameFromSelection } from '@/lib/selectionHelpers'
 import { STATE_COLORS, LINKED_ISSUE_COLOR, LINKED_RISK_COLOR } from '@/lib/colors'
 import { cn } from '@/lib/utils'
 
@@ -164,12 +164,23 @@ export function Reports() {
     }
   }, [workItemsError])
 
-  // Derive report project and optional area name from the first selection
-  const firstSelection = selectedProjects.length > 0 ? selectedProjects[0] : null
-  const reportProject = firstSelection ? getProjectNameFromSelection(firstSelection) : null
-  const reportAreaName = firstSelection ? getAreaNameFromSelection(firstSelection) : null
+  const multipleProjectsSelected = activeProjectNames.length > 1
 
-  const { data: wikiData, isLoading: wikiLoading } = useProjectWiki(reportProject, reportAreaName)
+  const reportProject = activeProjectNames.length === 1 ? activeProjectNames[0]! : null
+
+  const reportAreaNames = useMemo(() => {
+    if (!reportProject) return []
+    const filters = areaFilters.get(reportProject)
+    if (!filters) return []
+    return filters
+      .map((sel) => getAreaNameFromSelection(sel))
+      .filter((n): n is string => n != null)
+  }, [reportProject, areaFilters])
+
+  const reportAreaLabel = reportAreaNames.length > 0 ? reportAreaNames.join(', ') : null
+
+  const wikiAreaName = reportAreaNames.length > 0 ? reportAreaNames[0]! : null
+  const { data: wikiData, isLoading: wikiLoading } = useProjectWiki(reportProject, wikiAreaName)
   const report = useProjectReport(workItems, iterations, reportProject, wikiData)
 
   const isLoading = projectsLoading || workItemsLoading || iterationsLoading
@@ -198,8 +209,8 @@ export function Reports() {
       const dataUrl = await toPng(slideRef.current, { pixelRatio: 1, width: 1280, height: 720 })
       const link = document.createElement('a')
       const today = new Date().toISOString().slice(0, 10)
-      const base = reportAreaName
-        ? `${report.projectName} - ${reportAreaName}`
+      const base = reportAreaLabel
+        ? `${report.projectName} - ${reportAreaLabel}`
         : report.projectName
       link.download = `${base} - ${today}.png`
       link.href = dataUrl
@@ -211,7 +222,7 @@ export function Reports() {
     } finally {
       setExporting(false)
     }
-  }, [report])
+  }, [report, reportAreaLabel])
 
   // ADO links
   const adoBaseUrl = ADO_ORG ? `https://dev.azure.com/${ADO_ORG}` : null
@@ -274,8 +285,19 @@ export function Reports() {
         </div>
       )}
 
+      {/* Multi-project gate */}
+      {!isLoading && multipleProjectsSelected && (
+        <Card>
+          <CardContent className="py-12">
+            <p className="text-center text-muted-foreground">
+              Please select a single project to view its report. Multiple area paths within one project are supported.
+            </p>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Report card */}
-      {!isLoading && report && (
+      {!isLoading && !multipleProjectsSelected && report && (
         <div className="space-y-6">
           {/* ── Header area ──────────────────────────────────────── */}
           <motion.div
@@ -288,7 +310,7 @@ export function Reports() {
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="text-3xl font-extrabold tracking-tight bg-gradient-to-r from-foreground to-foreground/60 bg-clip-text text-transparent">
-                  {report.projectName}{reportAreaName ? ` - ${reportAreaName}` : ''}
+                  {report.projectName}{reportAreaLabel ? ` - ${reportAreaLabel}` : ''}
                 </h2>
                 <div className="flex items-center gap-2 mt-1">
                   <StatusDot status={report.overallStatus} />
@@ -521,7 +543,7 @@ export function Reports() {
 
           {/* Offscreen slide for image capture */}
           <div aria-hidden style={{ position: 'absolute', left: -9999, top: 0, overflow: 'hidden' }}>
-            <ReportSlide ref={slideRef} report={report} areaName={reportAreaName} />
+            <ReportSlide ref={slideRef} report={report} areaName={reportAreaLabel} />
           </div>
         </div>
       )}
