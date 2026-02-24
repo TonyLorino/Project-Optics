@@ -51,18 +51,13 @@ src/
 
 ## ADO Integration
 
-- All requests go through a Vite dev-server proxy (`/api/ado → dev.azure.com`).
-- The organization name is read from `VITE_ADO_ORGANIZATION`; the PAT is injected server-side and never appears in browser network traffic.
+- All requests go through `/api/ado/*`, which is proxied to `dev.azure.com`.
+- **Local dev:** The Vite dev-server proxy (`vite.config.ts`) rewrites the path and injects the PAT from `VITE_ADO_PAT` in `.env.local`.
+- **Production (Vercel):** A serverless function (`api/ado.ts`) performs the same rewrite and auth injection, reading `ADO_ORGANIZATION` and `ADO_PAT` from Vercel environment variables. The PAT is never bundled into client-side JavaScript.
 - WIQL queries are issued per-project in parallel using `Promise.allSettled` so a single project failure does not crash the entire dashboard.
 - Work-item detail fetches are batched in groups of 200 (ADO max).
 - The Axios client enforces a 30-second timeout and retries 429 (rate-limit) responses with exponential backoff (up to 2 retries).
 - WIQL query inputs are sanitized (single-quote escaping) to prevent injection.
-
-> **Production note:** The Vite proxy only exists during `npm run dev`. A
-> production build produces static files with no server to forward API calls.
-> Before deploying, you must set up a backend proxy (serverless function, BFF,
-> etc.) that rewrites `/api/ado/*` to `dev.azure.com/<org>/*` and attaches the
-> PAT header. See the Supabase migration path below for the recommended approach.
 
 ## Error Handling
 
@@ -155,6 +150,5 @@ Store these in `.env.local` (git-ignored).
 ## Future Work
 
 - **Supabase backend** — Replace localStorage with Supabase (see migration path above) to enable multi-user persistence and real-time collaboration.
-- **Production proxy** — Deploy a serverless function or BFF to proxy ADO requests in production builds.
 - **Settings page** — PAT management, theme preferences, notification config.
 - **% Complete metric** — Progress percentage calculation on the Reports page (currently disabled pending rework).

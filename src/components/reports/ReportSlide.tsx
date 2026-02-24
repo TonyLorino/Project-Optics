@@ -57,8 +57,7 @@ export const ReportSlide = forwardRef<HTMLDivElement, ReportSlideProps>(
                 className="inline-block h-2.5 w-2.5 rounded-full shrink-0"
                 style={{ backgroundColor: STATUS_COLORS[report.overallStatus] }}
               />
-              {/* TODO: re-enable once % complete calculation is fixed */}
-              {/* <span className="font-medium">{report.progressPercent}% complete</span> */}
+              <span className="font-medium">{report.progressPercent}% complete</span>
               <MetaField label="End Date" value={report.endDate ?? '—'} />
             </div>
           </div>

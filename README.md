@@ -67,21 +67,35 @@ npm run dev
 | `npm run lint`  | Run ESLint                           |
 | `npm run preview` | Preview the production build locally |
 
-## Deployment Note
+## Deploy to Vercel
 
-This app currently runs as a **dev-only** dashboard. The Vite dev server proxies
-API requests to Azure DevOps and injects the PAT server-side. A production build
-(`npm run build`) outputs static files that **cannot** reach Azure DevOps without
-a backend proxy in place.
+The repo includes a Vercel serverless proxy (`api/ado.ts`) that replaces the
+Vite dev proxy in production.
 
-To deploy to production, you will need one of:
+1. Install the [Vercel CLI](https://vercel.com/docs/cli) and link the project:
 
-- A serverless function (Vercel / Cloudflare Workers) that proxies `/api/ado/*`
-  and injects the PAT
-- A lightweight BFF (backend-for-frontend) server
+```bash
+vercel link
+```
 
-See the "Supabase Migration Path" section in
-[ARCHITECTURE.md](ARCHITECTURE.md) for more detail.
+2. Add the following **Environment Variables** in the Vercel dashboard
+   (Settings > Environment Variables). These are server-only -- do **not** prefix
+   with `VITE_`:
+
+| Variable           | Description                    |
+| ------------------ | ------------------------------ |
+| `ADO_ORGANIZATION` | Azure DevOps organization name |
+| `ADO_PAT`          | Personal Access Token          |
+
+3. Deploy:
+
+```bash
+vercel --prod
+```
+
+The `VITE_ADO_*` variables in `.env.local` are still used for local
+development (`npm run dev`). The serverless function reads the non-prefixed
+versions so the PAT is never bundled into client-side JavaScript.
 
 ## Architecture
 
