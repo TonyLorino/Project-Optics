@@ -26,7 +26,9 @@ function buildHash(state: {
   dateRange: { from: string; to: string } | null
 }): string {
   const parts: string[] = []
-  parts.push(`page=${encodeURIComponent(state.activePage)}`)
+  if (state.activePage !== 'dashboard') {
+    parts.push(`page=${encodeURIComponent(state.activePage)}`)
+  }
   if (state.selectedProjects.length > 0) {
     parts.push(`projects=${state.selectedProjects.map(encodeURIComponent).join(',')}`)
   }
@@ -79,7 +81,7 @@ export function useHashSync(): void {
     const unsubscribe = useUIStore.subscribe((state) => {
       suppressRef.current = true
       const hash = buildHash(state)
-      window.history.replaceState(null, '', `#${hash}`)
+      window.history.replaceState(null, '', hash ? `#${hash}` : window.location.pathname)
       queueMicrotask(() => { suppressRef.current = false })
     })
     return unsubscribe

@@ -1,3 +1,7 @@
+/** Azure DevOps organization name, with fallback for deployed environments */
+export const ADO_ORGANIZATION =
+  (import.meta.env.VITE_ADO_ORGANIZATION as string | undefined) ?? 'CorporateDataOffice'
+
 /** Prefix used by archived projects in the CorporateDataOffice org */
 export const ARCHIVED_PROJECT_PREFIX = 'z'
 

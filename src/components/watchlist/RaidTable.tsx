@@ -22,7 +22,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import type { WorkItem, WorkItemState } from '@/types/workItem'
 import { cn } from '@/lib/utils'
-import { TABLE_PAGE_SIZE } from '@/lib/constants'
+import { TABLE_PAGE_SIZE, ADO_ORGANIZATION } from '@/lib/constants'
 import { RAID_CATEGORY_COLORS, STATE_BG_CLASSES } from '@/lib/colors'
 import { StateFilter, ALL_STATES } from '@/components/dashboard/StateFilter'
 import { RaidTypeFilter } from './RaidTypeFilter'
@@ -53,7 +53,6 @@ interface RaidTableProps {
   allWorkItems: WorkItem[]
   isLoading?: boolean
   error?: Error | null
-  organization?: string
 }
 
 export function RaidTable({
@@ -61,7 +60,6 @@ export function RaidTable({
   allWorkItems,
   isLoading,
   error,
-  organization = import.meta.env.VITE_ADO_ORGANIZATION as string ?? 'CorporateDataOffice',
 }: RaidTableProps) {
   const [sortKey, setSortKey] = useState<SortKey>('createdDate')
   const [sortDir, setSortDir] = useState<SortDir>('desc')
@@ -333,7 +331,7 @@ export function RaidTable({
                           </TableCell>
                           <TableCell>
                             <a
-                              href={`https://dev.azure.com/${organization}/${encodeURIComponent(item.projectName)}/_workitems/edit/${item.id}`}
+                              href={`https://dev.azure.com/${ADO_ORGANIZATION}/${encodeURIComponent(item.projectName)}/_workitems/edit/${item.id}`}
                               target="_blank"
                               rel="noopener noreferrer"
                               className="opacity-0 group-hover:opacity-100 transition-opacity"
@@ -367,7 +365,7 @@ export function RaidTable({
                             </TableCell>
                             <TableCell>
                               <a
-                                href={`https://dev.azure.com/${organization}/${encodeURIComponent(parent.projectName)}/_workitems/edit/${parent.id}`}
+                                href={`https://dev.azure.com/${ADO_ORGANIZATION}/${encodeURIComponent(parent.projectName)}/_workitems/edit/${parent.id}`}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="opacity-0 group-hover:opacity-100 transition-opacity"

@@ -24,7 +24,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import type { WorkItem, WorkItemState } from '@/types/workItem'
 import { cn } from '@/lib/utils'
-import { TABLE_PAGE_SIZE } from '@/lib/constants'
+import { TABLE_PAGE_SIZE, ADO_ORGANIZATION } from '@/lib/constants'
 import { getWorkItemBgClass } from '@/lib/colors'
 import { StateFilter, ALL_STATES } from './StateFilter'
 import {
@@ -94,17 +94,15 @@ interface WorkItemsTableProps {
   workItems: WorkItem[]
   isLoading?: boolean
   error?: Error | null
-  organization?: string
 }
 
 export function WorkItemsTable({
   workItems,
   isLoading,
   error,
-  organization = import.meta.env.VITE_ADO_ORGANIZATION as string ?? 'CorporateDataOffice',
 }: WorkItemsTableProps) {
-  const [sortKey, setSortKey] = useState<SortKey>('changedDate')
-  const [sortDir, setSortDir] = useState<SortDir>('desc')
+  const [sortKey, setSortKey] = useState<SortKey>('id')
+  const [sortDir, setSortDir] = useState<SortDir>('asc')
   const [page, setPage] = useState(0)
   const [expandedIds, setExpandedIds] = useState<Set<string>>(() => new Set())
   const [topLevel, setTopLevel] = useState<TopLevel>('Area Path')
@@ -368,7 +366,7 @@ export function WorkItemsTable({
                     </TableCell>
                     <TableCell>
                       <a
-                        href={`https://dev.azure.com/${organization}/${encodeURIComponent(item.projectName)}/_workitems/edit/${item.id}`}
+                        href={`https://dev.azure.com/${ADO_ORGANIZATION}/${encodeURIComponent(item.projectName)}/_workitems/edit/${item.id}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="opacity-0 group-hover:opacity-100 transition-opacity"

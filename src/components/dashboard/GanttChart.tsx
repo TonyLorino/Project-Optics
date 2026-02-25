@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback, useRef } from 'react'
 import { parseISO, differenceInCalendarDays, addDays, format, startOfWeek } from 'date-fns'
-import { ChevronDown, ChevronsDownUp, ChevronsUpDown, FolderOpen } from 'lucide-react'
+import { ChevronDown, ChevronsDownUp, ChevronsUpDown, ExternalLink, FolderOpen } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -15,6 +15,7 @@ import {
 import type { WorkItem, WorkItemState } from '@/types/workItem'
 import { cn } from '@/lib/utils'
 import { getWorkItemColor } from '@/lib/colors'
+import { ADO_ORGANIZATION } from '@/lib/constants'
 import { StateFilter, ALL_STATES } from './StateFilter'
 import { TypeFilter, DEFAULT_SELECTED_TYPES, AREA_PATH_KEY } from './TypeFilter'
 import {
@@ -44,7 +45,9 @@ function sortNodes(nodes: TreeNode[]): void {
   nodes.sort((a, b) => {
     const hDiff = hierarchyRank(a.item.workItemType) - hierarchyRank(b.item.workItemType)
     if (hDiff !== 0) return hDiff
-    return getStartDate(a.item).getTime() - getStartDate(b.item).getTime()
+    const dateDiff = getStartDate(a.item).getTime() - getStartDate(b.item).getTime()
+    if (dateDiff !== 0) return dateDiff
+    return a.item.id - b.item.id
   })
   for (const n of nodes) {
     if (n.children.length > 0) sortNodes(n.children)
@@ -362,7 +365,7 @@ export function GanttChart({ workItems, isLoading, error }: GanttChartProps) {
                   <div
                     key={item.id}
                     className={cn(
-                      'flex items-center gap-1 border-b px-2 hover:bg-muted/50 transition-colors',
+                      'group flex items-center gap-1 border-b px-2 hover:bg-muted/50 transition-colors',
                       depth > 0 && 'bg-muted/20',
                     )}
                     style={{ height: ROW_HEIGHT, paddingLeft: `${8 + depth * 16}px` }}
@@ -397,6 +400,14 @@ export function GanttChart({ workItems, isLoading, error }: GanttChartProps) {
                     >
                       {item.title}
                     </span>
+                    <a
+                      href={`https://dev.azure.com/${ADO_ORGANIZATION}/${encodeURIComponent(item.projectName)}/_workitems/edit/${item.id}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="shrink-0 ml-auto opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <ExternalLink className="h-3 w-3 text-muted-foreground hover:text-foreground" />
+                    </a>
                   </div>
                 )
               })}

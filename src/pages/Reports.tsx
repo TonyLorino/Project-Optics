@@ -25,8 +25,7 @@ import { useUIStore } from '@/store/uiStore'
 import { parseSelections, filterByAreaSelections, getAreaNameFromSelection } from '@/lib/selectionHelpers'
 import { STATE_COLORS, LINKED_ISSUE_COLOR, LINKED_RISK_COLOR } from '@/lib/colors'
 import { cn } from '@/lib/utils'
-
-const ADO_ORG = import.meta.env.VITE_ADO_ORGANIZATION as string | undefined
+import { ADO_ORGANIZATION } from '@/lib/constants'
 
 function StatusDot({ status }: { status: 'green' | 'yellow' | 'red' }) {
   const colors = {
@@ -238,7 +237,7 @@ export function Reports() {
   }, [report, reportAreaLabel])
 
   // ADO links
-  const adoBaseUrl = ADO_ORG ? `https://dev.azure.com/${ADO_ORG}` : null
+  const adoBaseUrl = `https://dev.azure.com/${ADO_ORGANIZATION}`
 
   return (
     <div className="p-4 md:px-6 md:pt-4 md:pb-6 lg:px-8 lg:pt-4 lg:pb-8 space-y-6 max-w-[1600px] mx-auto">
@@ -338,36 +337,32 @@ export function Reports() {
                 <span className="text-xs text-muted-foreground mr-1">
                   Updated: {report.lastModified ?? '—'}
                 </span>
-                {adoBaseUrl && (
-                  <>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <a
-                          href={`${adoBaseUrl}/${encodeURIComponent(report.projectName)}/_backlogs`}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="text-muted-foreground hover:text-foreground transition-colors p-1.5 rounded-md hover:bg-muted/50"
-                        >
-                          <ClipboardList className="h-4 w-4" />
-                        </a>
-                      </TooltipTrigger>
-                      <TooltipContent>Backlog</TooltipContent>
-                    </Tooltip>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <a
-                          href={`${adoBaseUrl}/${encodeURIComponent(report.projectName)}/_boards`}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="text-muted-foreground hover:text-foreground transition-colors p-1.5 rounded-md hover:bg-muted/50"
-                        >
-                          <Kanban className="h-4 w-4" />
-                        </a>
-                      </TooltipTrigger>
-                      <TooltipContent>Board</TooltipContent>
-                    </Tooltip>
-                  </>
-                )}
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <a
+                      href={`${adoBaseUrl}/${encodeURIComponent(report.projectName)}/_backlogs/backlog`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-muted-foreground hover:text-foreground transition-colors p-1.5 rounded-md hover:bg-muted/50"
+                    >
+                      <ClipboardList className="h-4 w-4" />
+                    </a>
+                  </TooltipTrigger>
+                  <TooltipContent>Backlog</TooltipContent>
+                </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <a
+                      href={`${adoBaseUrl}/${encodeURIComponent(report.projectName)}/_boards/board`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-muted-foreground hover:text-foreground transition-colors p-1.5 rounded-md hover:bg-muted/50"
+                    >
+                      <Kanban className="h-4 w-4" />
+                    </a>
+                  </TooltipTrigger>
+                  <TooltipContent>Board</TooltipContent>
+                </Tooltip>
               </div>
             </div>
 
@@ -581,7 +576,7 @@ function MetaField({ label, value, align = 'left' }: { label: string; value: str
   return (
     <div className={cn('space-y-0.5', align === 'right' && 'text-right')}>
       <span className="text-muted-foreground text-xs font-medium">{label}</span>
-      <p className="font-medium truncate">{value}</p>
+      <p className="font-medium truncate" title={value}>{value}</p>
     </div>
   )
 }
