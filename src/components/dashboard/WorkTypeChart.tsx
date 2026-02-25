@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import {
   PieChart,
   Pie,
@@ -21,8 +21,6 @@ interface WorkTypeChartProps {
 
 export function WorkTypeChart({ data, isLoading }: WorkTypeChartProps) {
   const total = useMemo(() => data.reduce((s, d) => s + d.count, 0), [data])
-  const [activeIndex, setActiveIndex] = useState(-1)
-
   if (isLoading) {
     return (
       <Card>
@@ -72,10 +70,7 @@ export function WorkTypeChart({ data, isLoading }: WorkTypeChartProps) {
               animationDuration={800}
               animationEasing="ease-out"
               animationBegin={100}
-              activeIndex={activeIndex}
               activeShape={renderActiveShape}
-              onMouseEnter={(_, index) => setActiveIndex(index)}
-              onMouseLeave={() => setActiveIndex(-1)}
             >
               {data.map((entry, index) => (
                 <Cell

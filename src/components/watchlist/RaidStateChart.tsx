@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import {
   PieChart,
   Pie,
@@ -41,8 +41,6 @@ export function RaidStateChart({ workItems, isLoading }: RaidStateChartProps) {
     )
   }
 
-  const [activeIndex, setActiveIndex] = useState(-1)
-
   if (data.length === 0) {
     return (
       <Card>
@@ -75,10 +73,7 @@ export function RaidStateChart({ workItems, isLoading }: RaidStateChartProps) {
               animationDuration={800}
               animationEasing="ease-out"
               animationBegin={100}
-              activeIndex={activeIndex}
               activeShape={renderActiveShape}
-              onMouseEnter={(_, index) => setActiveIndex(index)}
-              onMouseLeave={() => setActiveIndex(-1)}
             >
               {data.map((entry, index) => (
                 <Cell key={index} fill={STATE_COLORS[entry.state] ?? '#d4d4d8'} />
