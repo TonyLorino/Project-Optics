@@ -44,6 +44,11 @@ export function filterByTopLevel(items: WorkItem[], topLevel: TopLevel): WorkIte
   return items.filter((w) => hierarchyRank(w.workItemType) >= minRank)
 }
 
+export function filterByTypes(items: WorkItem[], types: Set<string>): WorkItem[] {
+  if (types.size === 0) return []
+  return items.filter((w) => types.has(w.workItemType))
+}
+
 // ── Build parent-child tree from flat items ─────────────────
 
 export function buildTree(items: WorkItem[]): TreeNode[] {

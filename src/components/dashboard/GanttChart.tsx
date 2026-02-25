@@ -16,16 +16,15 @@ import type { WorkItem, WorkItemState } from '@/types/workItem'
 import { cn } from '@/lib/utils'
 import { getWorkItemColor } from '@/lib/colors'
 import { StateFilter, ALL_STATES } from './StateFilter'
+import { TypeFilter, DEFAULT_SELECTED_TYPES, AREA_PATH_KEY } from './TypeFilter'
 import {
   type TreeNode,
-  type TopLevel,
   buildTree,
   hierarchyRank,
   groupByAreaPath,
   flattenGroupedTree,
   collectAllExpandableIds,
-  filterByTopLevel,
-  TOP_LEVEL_OPTIONS,
+  filterByTypes,
 } from '@/lib/workItemTree'
 
 const ROW_HEIGHT = 36
@@ -96,7 +95,7 @@ export function GanttChart({ workItems, isLoading, error }: GanttChartProps) {
   const [expandedIds, setExpandedIds] = useState<Set<string>>(() => new Set())
   const [tooltip, setTooltip] = useState<TooltipData | null>(null)
   const [zoomLevel, setZoomLevel] = useState<ZoomLevel>('quarter')
-  const [topLevel, setTopLevel] = useState<TopLevel>('Area Path')
+  const [selectedTypes, setSelectedTypes] = useState<Set<string>>(() => new Set(DEFAULT_SELECTED_TYPES))
   const [selectedStates, setSelectedStates] = useState<Set<WorkItemState>>(() => new Set(ALL_STATES))
   const containerRef = useRef<HTMLDivElement>(null)
 
@@ -112,16 +111,16 @@ export function GanttChart({ workItems, isLoading, error }: GanttChartProps) {
   }, [workItems, selectedStates])
 
   const groups = useMemo(() => {
-    const filtered = filterByTopLevel(stateFilteredItems, topLevel)
+    const filtered = filterByTypes(stateFilteredItems, selectedTypes)
     const roots = buildTree(filtered)
     sortNodes(roots)
-    if (topLevel === 'Area Path') {
+    if (selectedTypes.has(AREA_PATH_KEY)) {
       const grouped = groupByAreaPath(roots)
       for (const g of grouped) sortNodes(g.roots)
       return grouped
     }
     return [{ groupId: '', label: '', roots }]
-  }, [stateFilteredItems, topLevel])
+  }, [stateFilteredItems, selectedTypes])
 
   const groupDateRanges = useMemo(() => {
     const ranges = new Map<string, { start: Date; end: Date }>()
@@ -272,16 +271,7 @@ export function GanttChart({ workItems, isLoading, error }: GanttChartProps) {
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle className="text-base">Timeline</CardTitle>
         <div className="flex items-center gap-2">
-          <Select value={topLevel} onValueChange={(v) => setTopLevel(v as TopLevel)}>
-            <SelectTrigger className="h-7 w-[120px] text-xs">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {TOP_LEVEL_OPTIONS.map((opt) => (
-                <SelectItem key={opt} value={opt}>{opt}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <TypeFilter selected={selectedTypes} onChange={setSelectedTypes} />
           <StateFilter selected={selectedStates} onChange={setSelectedStates} />
           <Select value={zoomLevel} onValueChange={(v) => setZoomLevel(v as ZoomLevel)}>
             <SelectTrigger className="h-7 w-[100px] text-xs">
