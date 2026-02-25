@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import {
   PieChart,
   Pie,
@@ -11,7 +11,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { RAID_CATEGORY_COLORS } from '@/lib/colors'
-import { ChartTooltip } from '@/components/dashboard/ChartTooltip'
+import { ChartTooltip, renderActiveShape } from '@/components/dashboard/ChartTooltip'
 import type { RaidTypeEntry } from '@/hooks/useRaidMetrics'
 
 interface RaidTypeChartProps {
@@ -21,6 +21,7 @@ interface RaidTypeChartProps {
 
 export function RaidTypeChart({ data, isLoading }: RaidTypeChartProps) {
   const total = useMemo(() => data.reduce((s, d) => s + d.count, 0), [data])
+  const [activeIndex, setActiveIndex] = useState(-1)
 
   if (isLoading) {
     return (
@@ -71,6 +72,10 @@ export function RaidTypeChart({ data, isLoading }: RaidTypeChartProps) {
               animationDuration={800}
               animationEasing="ease-out"
               animationBegin={100}
+              activeIndex={activeIndex}
+              activeShape={renderActiveShape}
+              onMouseEnter={(_, index) => setActiveIndex(index)}
+              onMouseLeave={() => setActiveIndex(-1)}
             >
               {data.map((entry, index) => (
                 <Cell

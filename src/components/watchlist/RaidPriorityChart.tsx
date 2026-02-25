@@ -11,7 +11,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { PRIORITY_COLORS } from '@/lib/colors'
-import { ChartTooltip } from '@/components/dashboard/ChartTooltip'
+import { ChartTooltip, ChartBarCursor } from '@/components/dashboard/ChartTooltip'
 import type { RaidPriorityEntry } from '@/hooks/useRaidMetrics'
 
 interface RaidPriorityChartProps {
@@ -85,7 +85,7 @@ export function RaidPriorityChart({ data, isLoading }: RaidPriorityChartProps) {
                   value: `${e.value} items`,
                 })) ?? []
               } />}
-              cursor={false}
+              cursor={<ChartBarCursor />}
             />
             <Bar
               dataKey="count"
@@ -93,6 +93,7 @@ export function RaidPriorityChart({ data, isLoading }: RaidPriorityChartProps) {
               barSize={24}
               animationDuration={600}
               animationEasing="ease-out"
+              activeBar={{ fillOpacity: 0.8 }}
             >
               {data.map((entry) => (
                 <Cell

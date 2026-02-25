@@ -171,13 +171,13 @@ export function SprintBurndown({
                   value: `${e.value} pts`,
                 })) ?? []
               } />}
-              cursor={{ stroke: 'hsl(var(--muted-foreground))', strokeWidth: 1, strokeDasharray: '4 4' }}
+              cursor={{ stroke: 'var(--color-muted-foreground)', strokeWidth: 1, strokeDasharray: '4 4' }}
             />
             <ReferenceLine y={0} className="stroke-border" />
             <Area
               type="monotone"
               dataKey="ideal"
-              stroke="hsl(var(--muted-foreground))"
+              stroke="var(--color-muted-foreground)"
               strokeDasharray="5 5"
               fill="none"
               strokeWidth={2}
@@ -195,7 +195,7 @@ export function SprintBurndown({
               name="Actual"
               connectNulls={false}
               dot={false}
-              activeDot={{ r: 4, strokeWidth: 2, stroke: 'hsl(var(--background))' }}
+              activeDot={{ r: 4, strokeWidth: 2, stroke: 'var(--color-background)' }}
               animationDuration={600}
               animationEasing="ease-out"
             />

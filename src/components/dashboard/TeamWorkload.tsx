@@ -11,7 +11,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { STATE_COLORS } from '@/lib/colors'
-import { ChartTooltip } from './ChartTooltip'
+import { ChartTooltip, ChartBarCursor } from './ChartTooltip'
 import type { TeamMemberData } from '@/hooks/useTeamWorkload'
 
 interface TeamWorkloadProps {
@@ -110,7 +110,7 @@ export function TeamWorkload({ data, isLoading }: TeamWorkloadProps) {
                   return { label: labels[e.dataKey ?? ''] ?? String(e.name), value: `${e.value}${suffix}` }
                 }) ?? []
               } />}
-              cursor={false}
+              cursor={<ChartBarCursor />}
             />
             <Legend
               formatter={(value) => {
@@ -130,6 +130,7 @@ export function TeamWorkload({ data, isLoading }: TeamWorkloadProps) {
               name="stories"
               animationDuration={600}
               animationEasing="ease-out"
+              activeBar={{ fillOpacity: 0.8 }}
             />
             <Bar
               dataKey="completedStories"
@@ -138,6 +139,7 @@ export function TeamWorkload({ data, isLoading }: TeamWorkloadProps) {
               name="completedStories"
               animationDuration={600}
               animationEasing="ease-out"
+              activeBar={{ fillOpacity: 0.8 }}
             />
             <Bar
               dataKey="storyPoints"
@@ -146,6 +148,7 @@ export function TeamWorkload({ data, isLoading }: TeamWorkloadProps) {
               name="storyPoints"
               animationDuration={600}
               animationEasing="ease-out"
+              activeBar={{ fillOpacity: 0.8 }}
             />
             <Bar
               dataKey="velocity"
@@ -154,6 +157,7 @@ export function TeamWorkload({ data, isLoading }: TeamWorkloadProps) {
               name="velocity"
               animationDuration={600}
               animationEasing="ease-out"
+              activeBar={{ fillOpacity: 0.8 }}
             />
           </BarChart>
         </ResponsiveContainer>

@@ -9,7 +9,7 @@ import {
 } from 'recharts'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
-import { ChartTooltip } from '@/components/dashboard/ChartTooltip'
+import { ChartTooltip, ChartBarCursor } from '@/components/dashboard/ChartTooltip'
 import type { WorkItem } from '@/types/workItem'
 import { isRaidItem } from '@/lib/raidHelpers'
 
@@ -81,6 +81,7 @@ export function RaidAssigneeChart({ workItems, isLoading }: RaidAssigneeChartPro
               content={<ChartTooltip formatRows={(p) =>
                 p?.map((e) => ({ label: String(e.name ?? ''), value: `${e.value} items` })) ?? []
               } />}
+              cursor={<ChartBarCursor />}
             />
             <Bar
               dataKey="count"
@@ -88,6 +89,7 @@ export function RaidAssigneeChart({ workItems, isLoading }: RaidAssigneeChartPro
               radius={[0, 4, 4, 0]}
               animationDuration={800}
               animationEasing="ease-out"
+              activeBar={{ fillOpacity: 0.8 }}
             />
           </BarChart>
         </ResponsiveContainer>

@@ -10,7 +10,7 @@ import {
 } from 'recharts'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
-import { ChartTooltip } from '@/components/dashboard/ChartTooltip'
+import { ChartTooltip, ChartBarCursor } from '@/components/dashboard/ChartTooltip'
 import type { WorkItem } from '@/types/workItem'
 
 interface RaidAgeChartProps {
@@ -108,12 +108,14 @@ export function RaidAgeChart({ workItems, isLoading }: RaidAgeChartProps) {
                   value: `${e.value} items`,
                 })) ?? []
               } />}
+              cursor={<ChartBarCursor />}
             />
             <Bar
               dataKey="count"
               radius={[4, 4, 0, 0]}
               animationDuration={800}
               animationEasing="ease-out"
+              activeBar={{ fillOpacity: 0.8 }}
             >
               {data.map((_entry, index) => (
                 <Cell key={index} fill={BUCKET_COLORS[index] ?? '#d4d4d8'} />

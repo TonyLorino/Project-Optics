@@ -11,7 +11,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { STATE_COLORS } from '@/lib/colors'
-import { ChartTooltip } from './ChartTooltip'
+import { ChartTooltip, ChartBarCursor } from './ChartTooltip'
 import type { VelocityDataPoint } from '@/types/metrics'
 
 interface VelocityChartProps {
@@ -95,16 +95,16 @@ export function VelocityChart({
                   value: `${e.value} pts`,
                 })) ?? []
               } />}
-              cursor={false}
+              cursor={<ChartBarCursor />}
             />
             <ReferenceLine
               y={averageVelocity}
-              stroke="hsl(var(--muted-foreground))"
+              stroke="var(--color-muted-foreground)"
               strokeDasharray="5 5"
               label={{
                 value: 'Avg',
                 position: 'right',
-                fill: 'hsl(var(--muted-foreground))',
+                fill: 'var(--color-muted-foreground)',
                 fontSize: 11,
               }}
             />
@@ -115,6 +115,7 @@ export function VelocityChart({
               name="Story Points"
               animationDuration={600}
               animationEasing="ease-out"
+              activeBar={{ fillOpacity: 0.8 }}
             />
           </BarChart>
         </ResponsiveContainer>

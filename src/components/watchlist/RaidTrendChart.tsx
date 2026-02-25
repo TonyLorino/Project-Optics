@@ -98,6 +98,7 @@ export function RaidTrendChart({ workItems, isLoading }: RaidTrendChartProps) {
                   color: e.color,
                 })) ?? []
               } />}
+              cursor={{ stroke: 'var(--color-foreground)', strokeWidth: 1, strokeDasharray: '4 4', strokeOpacity: 0.15 }}
             />
             <Legend wrapperStyle={{ fontSize: '12px' }} iconType="circle" iconSize={8} />
             <Area

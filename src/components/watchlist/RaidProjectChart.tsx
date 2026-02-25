@@ -9,7 +9,7 @@ import {
 } from 'recharts'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
-import { ChartTooltip } from '@/components/dashboard/ChartTooltip'
+import { ChartTooltip, ChartBarCursor } from '@/components/dashboard/ChartTooltip'
 import type { WorkItem } from '@/types/workItem'
 import { isRaidItem } from '@/lib/raidHelpers'
 
@@ -57,22 +57,23 @@ export function RaidProjectChart({ workItems, isLoading }: RaidProjectChartProps
       <CardHeader><CardTitle className="text-base">Watch List by Project</CardTitle></CardHeader>
       <CardContent>
         <ResponsiveContainer width="100%" height={250}>
-          <BarChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: -16 }}>
+          <BarChart data={data} margin={{ top: 8, right: 8, bottom: 24, left: -16 }}>
             <XAxis
               dataKey="project"
-              tick={{ fontSize: 11 }}
+              tick={{ fontSize: 11, dy: 8 }}
               tickLine={false}
               axisLine={false}
               interval={0}
-              angle={-30}
+              angle={-35}
               textAnchor="end"
-              height={60}
+              height={48}
             />
             <YAxis allowDecimals={false} tick={{ fontSize: 12 }} tickLine={false} axisLine={false} />
             <Tooltip
               content={<ChartTooltip formatRows={(p) =>
                 p?.map((e) => ({ label: String(e.name ?? ''), value: `${e.value} items` })) ?? []
               } />}
+              cursor={<ChartBarCursor />}
             />
             <Bar
               dataKey="count"
@@ -80,6 +81,7 @@ export function RaidProjectChart({ workItems, isLoading }: RaidProjectChartProps
               radius={[4, 4, 0, 0]}
               animationDuration={800}
               animationEasing="ease-out"
+              activeBar={{ fillOpacity: 0.8 }}
             />
           </BarChart>
         </ResponsiveContainer>

@@ -11,7 +11,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { STATE_COLORS } from '@/lib/colors'
-import { ChartTooltip } from './ChartTooltip'
+import { ChartTooltip, ChartBarCursor } from './ChartTooltip'
 import type { StateDistributionEntry } from '@/types/metrics'
 
 interface StateDistributionProps {
@@ -90,7 +90,7 @@ export function StateDistribution({
                   }
                 }) ?? []
               } />}
-              cursor={false}
+              cursor={<ChartBarCursor />}
             />
             <Bar
               dataKey="count"
@@ -98,11 +98,12 @@ export function StateDistribution({
               barSize={24}
               animationDuration={600}
               animationEasing="ease-out"
+              activeBar={{ fillOpacity: 0.8 }}
             >
               {data.map((entry) => (
                 <Cell
                   key={entry.state}
-                  fill={STATE_COLORS[entry.state] ?? 'hsl(var(--chart-1))'}
+                  fill={STATE_COLORS[entry.state] ?? 'var(--color-chart-1)'}
                 />
               ))}
             </Bar>
