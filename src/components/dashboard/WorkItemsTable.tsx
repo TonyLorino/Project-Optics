@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react'
+import { useState, useMemo, useCallback, useEffect } from 'react'
 import { format, parseISO } from 'date-fns'
 import {
   ArrowUpDown,
@@ -28,23 +28,16 @@ import { TABLE_PAGE_SIZE, ADO_ORGANIZATION } from '@/lib/constants'
 import { getWorkItemBgClass } from '@/lib/colors'
 import { StateFilter, ALL_STATES } from './StateFilter'
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-import {
   type TreeNode,
-  type TopLevel,
   buildTree,
   hierarchyRank,
   groupByAreaPath,
   flattenGroupedTree,
   collectAllExpandableIds,
-  filterByTopLevel,
-  TOP_LEVEL_OPTIONS,
+  collectFirstLevelIds,
+  filterByTypes,
 } from '@/lib/workItemTree'
+import { TypeFilter, DEFAULT_SELECTED_TYPES, AREA_PATH_KEY } from './TypeFilter'
 
 const PAGE_SIZE = TABLE_PAGE_SIZE
 
@@ -105,7 +98,7 @@ export function WorkItemsTable({
   const [sortDir, setSortDir] = useState<SortDir>('asc')
   const [page, setPage] = useState(0)
   const [expandedIds, setExpandedIds] = useState<Set<string>>(() => new Set())
-  const [topLevel, setTopLevel] = useState<TopLevel>('Area Path')
+  const [selectedTypes, setSelectedTypes] = useState<Set<string>>(() => new Set(DEFAULT_SELECTED_TYPES))
   const [selectedStates, setSelectedStates] = useState<Set<WorkItemState>>(() => new Set(ALL_STATES))
 
   const stateFilteredItems = useMemo(() => {
@@ -114,16 +107,16 @@ export function WorkItemsTable({
   }, [workItems, selectedStates])
 
   const groups = useMemo(() => {
-    const filtered = filterByTopLevel(stateFilteredItems, topLevel)
+    const filtered = filterByTypes(stateFilteredItems, selectedTypes)
     const roots = buildTree(filtered)
     sortNodes(roots, sortKey, sortDir)
-    if (topLevel === 'Area Path') {
+    if (selectedTypes.has(AREA_PATH_KEY)) {
       const grouped = groupByAreaPath(roots)
       for (const g of grouped) sortNodes(g.roots, sortKey, sortDir)
       return grouped
     }
     return [{ groupId: '', label: '', roots }]
-  }, [stateFilteredItems, sortKey, sortDir, topLevel])
+  }, [stateFilteredItems, sortKey, sortDir, selectedTypes])
 
   const visibleRows = useMemo(
     () => flattenGroupedTree(groups, expandedIds),
@@ -146,6 +139,15 @@ export function WorkItemsTable({
     () => collectAllExpandableIds(groups),
     [groups],
   )
+
+  const firstLevelIds = useMemo(
+    () => collectFirstLevelIds(groups),
+    [groups],
+  )
+
+  useEffect(() => {
+    setExpandedIds(new Set(firstLevelIds))
+  }, [firstLevelIds])
 
   const isExpanded = expandedIds.size > 0
 
@@ -197,16 +199,7 @@ export function WorkItemsTable({
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle className="text-base">Work Items</CardTitle>
         <div className="flex items-center gap-2">
-          <Select value={topLevel} onValueChange={(v) => setTopLevel(v as TopLevel)}>
-            <SelectTrigger className="h-7 w-[120px] text-xs">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {TOP_LEVEL_OPTIONS.map((opt) => (
-                <SelectItem key={opt} value={opt}>{opt}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <TypeFilter selected={selectedTypes} onChange={setSelectedTypes} />
           <StateFilter selected={selectedStates} onChange={setSelectedStates} />
           <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={toggleExpandAll}>
             {isExpanded ? (

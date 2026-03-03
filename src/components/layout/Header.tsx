@@ -19,7 +19,7 @@ interface MobileNavItem {
 const mobileNavItems: MobileNavItem[] = [
   { label: 'Dashboard', page: 'dashboard' },
   { label: 'Project Reports', page: 'reports' },
-  { label: 'Watch List', disabled: true, badge: 'Soon' },
+  { label: 'Watch List', page: 'watchlist' },
 ]
 
 export function Header() {

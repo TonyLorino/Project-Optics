@@ -117,7 +117,7 @@ export const ReportSlide = forwardRef<HTMLDivElement, ReportSlideProps>(
                     </thead>
                     <tbody>
                       {report.milestones.map((m) => (
-                        <tr key={m.id} className="border-b border-border/30 last:border-0">
+                        <tr key={m.id} className={`border-b border-border/30 last:border-0${m.completed ? ' opacity-50' : ''}`}>
                           <td className="py-1 pr-2 break-words">{m.name}</td>
                           <td className="py-1 text-center w-12">
                             <span

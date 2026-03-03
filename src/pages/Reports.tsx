@@ -1,6 +1,7 @@
 import { useMemo, useEffect, useRef, useCallback, useState } from 'react'
 import {
   ClipboardList,
+  FolderOpen,
   Kanban,
   Download,
 } from 'lucide-react'
@@ -26,6 +27,8 @@ import { parseSelections, filterByAreaSelections, getAreaNameFromSelection } fro
 import { STATE_COLORS, LINKED_ISSUE_COLOR, LINKED_RISK_COLOR } from '@/lib/colors'
 import { cn } from '@/lib/utils'
 import { ADO_ORGANIZATION } from '@/lib/constants'
+import { extractUrl } from '@/lib/wikiParser'
+import { GanttChart } from '@/components/dashboard/GanttChart'
 
 function StatusDot({ status }: { status: 'green' | 'yellow' | 'red' }) {
   const colors = {
@@ -321,48 +324,68 @@ export function Reports() {
             transition={{ delay: 0.1, duration: 0.3, ease: 'easeOut' }}
           >
             {/* Project title row */}
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-3xl font-extrabold tracking-tight bg-gradient-to-r from-foreground to-foreground/60 bg-clip-text text-transparent">
+            <div>
+              <div className="flex items-center justify-between">
+                <h2 className="text-3xl font-extrabold tracking-tight">
                   {report.projectName}{reportAreaLabel ? ` - ${reportAreaLabel}` : ''}
                 </h2>
-                <div className="flex items-center gap-2 mt-1">
-                  <StatusDot status={report.overallStatus} />
-                  {/* <span className="text-sm text-muted-foreground font-medium">
-                    {report.progressPercent}% complete
-                  </span> */}
+                <div className="flex items-center gap-1.5">
+                  {(() => {
+                    const docsRaw = report.wikiFields['Project Documents']
+                    const docsUrl = docsRaw ? extractUrl(docsRaw) : null
+                    if (!docsUrl) return null
+                    return (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <a
+                            href={docsUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-muted-foreground hover:text-foreground transition-colors p-1.5 rounded-md hover:bg-muted/50"
+                          >
+                            <FolderOpen className="h-4 w-4" />
+                          </a>
+                        </TooltipTrigger>
+                        <TooltipContent>Project Documents</TooltipContent>
+                      </Tooltip>
+                    )
+                  })()}
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <a
+                        href={`${adoBaseUrl}/${encodeURIComponent(report.projectName)}/_backlogs/backlog`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-muted-foreground hover:text-foreground transition-colors p-1.5 rounded-md hover:bg-muted/50"
+                      >
+                        <ClipboardList className="h-4 w-4" />
+                      </a>
+                    </TooltipTrigger>
+                    <TooltipContent>Backlog</TooltipContent>
+                  </Tooltip>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <a
+                        href={`${adoBaseUrl}/${encodeURIComponent(report.projectName)}/_boards`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-muted-foreground hover:text-foreground transition-colors p-1.5 rounded-md hover:bg-muted/50"
+                      >
+                        <Kanban className="h-4 w-4" />
+                      </a>
+                    </TooltipTrigger>
+                    <TooltipContent>Board</TooltipContent>
+                  </Tooltip>
                 </div>
               </div>
-              <div className="flex items-center gap-1.5">
-                <span className="text-xs text-muted-foreground mr-1">
+              <div className="flex items-center justify-between mt-1">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-muted-foreground font-medium">Overall Health:</span>
+                  <StatusDot status={report.overallStatus} />
+                </div>
+                <span className="text-xs text-muted-foreground">
                   Updated: {report.lastModified ?? '—'}
                 </span>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <a
-                      href={`${adoBaseUrl}/${encodeURIComponent(report.projectName)}/_backlogs/backlog`}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="text-muted-foreground hover:text-foreground transition-colors p-1.5 rounded-md hover:bg-muted/50"
-                    >
-                      <ClipboardList className="h-4 w-4" />
-                    </a>
-                  </TooltipTrigger>
-                  <TooltipContent>Backlog</TooltipContent>
-                </Tooltip>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <a
-                      href={`${adoBaseUrl}/${encodeURIComponent(report.projectName)}/_boards/board`}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="text-muted-foreground hover:text-foreground transition-colors p-1.5 rounded-md hover:bg-muted/50"
-                    >
-                      <Kanban className="h-4 w-4" />
-                    </a>
-                  </TooltipTrigger>
-                  <TooltipContent>Board</TooltipContent>
-                </Tooltip>
               </div>
             </div>
 
@@ -454,7 +477,10 @@ export function Reports() {
                       </thead>
                       <tbody>
                         {report.milestones.map((m) => (
-                          <tr key={m.id} className="border-b border-border/50 last:border-0">
+                          <tr key={m.id} className={cn(
+                            "border-b border-border/50 last:border-0",
+                            m.completed && "opacity-50",
+                          )}>
                             <td className="py-2 pr-2">{m.name}</td>
                             <td className="py-2 text-center w-16">
                               <MilestoneStatusDot state={m.state} />
@@ -487,7 +513,6 @@ export function Reports() {
                         <tr className="border-b border-border text-left">
                           <th className="pb-2 font-medium text-muted-foreground">Type</th>
                           <th className="pb-2 font-medium text-muted-foreground">Title</th>
-                          <th className="pb-2 font-medium text-muted-foreground text-right">Owner</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -508,9 +533,6 @@ export function Reports() {
                               </span>
                             </td>
                             <td className="py-2 pr-4">{w.title}</td>
-                            <td className="py-2 text-right text-muted-foreground">
-                              {w.owner}
-                            </td>
                           </tr>
                         ))}
                       </tbody>
@@ -550,6 +572,15 @@ export function Reports() {
               {exporting ? 'Exporting…' : 'Export Slide'}
             </Button>
           </div>
+
+          {/* Timeline / Gantt */}
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.45, duration: 0.3, ease: 'easeOut' }}
+          >
+            <GanttChart workItems={workItems} isLoading={isLoading} />
+          </motion.div>
 
           {/* Offscreen slide for image capture */}
           <div aria-hidden style={{ position: 'absolute', left: -9999, top: 0, overflow: 'hidden' }}>

@@ -242,7 +242,6 @@ export function RaidTable({
                     <SortableHead label="Title" field="title" />
                     <SortableHead label="State" field="state" className="w-[100px]" />
                     <SortableHead label="Parent" field="parent" className="hidden sm:table-cell" />
-                    <SortableHead label="Owner" field="assignedTo" className="hidden lg:table-cell" />
                     <SortableHead label="Age" field="age" className="hidden md:table-cell w-[70px]" />
                     <SortableHead label="Created" field="createdDate" className="hidden md:table-cell" />
                     <TableHead className="w-[40px]" />
@@ -316,11 +315,6 @@ export function RaidTable({
                               </span>
                             ) : (
                               <span className="text-muted-foreground">—</span>
-                            )}
-                          </TableCell>
-                          <TableCell className="hidden lg:table-cell text-sm">
-                            {item.assignedTo?.displayName ?? (
-                              <span className="text-muted-foreground">Unassigned</span>
                             )}
                           </TableCell>
                           <TableCell className="hidden md:table-cell text-sm text-muted-foreground">

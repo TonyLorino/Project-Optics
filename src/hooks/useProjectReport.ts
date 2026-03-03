@@ -9,6 +9,7 @@ export interface MilestoneRow {
   name: string
   state: string
   targetDate: string | null
+  completed: boolean
 }
 
 export interface WatchListRow {
@@ -57,7 +58,7 @@ export function useProjectReport(
       return {
         projectName,
         progressPercent: 0,
-        overallStatus: 'red',
+        overallStatus: 'green',
         endDate: null,
         lastModified: null,
         totalStoryPoints: 0,
@@ -82,8 +83,26 @@ export function useProjectReport(
       totalSP > 0 ? Math.round((completedSP / totalSP) * 100) : 0
 
     // Overall status
+    const now = new Date()
+    now.setHours(0, 0, 0, 0)
+
+    const hasOpenRiskOrIssue = items.some(
+      (w) =>
+        (w.workItemType === 'Issue' || w.workItemType === 'Risk') &&
+        w.state !== 'Closed' &&
+        w.state !== 'Removed',
+    )
+
+    const hasOverdueTarget = items.some(
+      (w) =>
+        w.state !== 'Closed' &&
+        w.state !== 'Removed' &&
+        w.targetDate != null &&
+        new Date(w.targetDate) < now,
+    )
+
     const overallStatus: 'green' | 'yellow' | 'red' =
-      progressPercent >= 75 ? 'green' : progressPercent >= 50 ? 'yellow' : 'red'
+      hasOpenRiskOrIssue || hasOverdueTarget ? 'yellow' : 'green'
 
     // End date: latest targetDate across all items, fallback to latest sprint finishDate
     let endDate: string | null = null
@@ -120,8 +139,8 @@ export function useProjectReport(
       0,
     )
 
-    // Milestones: only Active features
-    const milestones: MilestoneRow[] = items
+    // Milestones: active features + 2 most recently completed
+    const activeMilestones: MilestoneRow[] = items
       .filter((w) => w.workItemType === 'Feature' && w.state === 'Active')
       .map((w) => ({
         id: w.id,
@@ -130,6 +149,7 @@ export function useProjectReport(
         targetDate: w.targetDate
           ? format(new Date(w.targetDate), 'yyyy-MM-dd')
           : null,
+        completed: false,
       }))
       .sort((a, b) => {
         if (a.targetDate && b.targetDate) return a.targetDate.localeCompare(b.targetDate)
@@ -137,6 +157,26 @@ export function useProjectReport(
         if (b.targetDate) return 1
         return 0
       })
+
+    const completedMilestones: MilestoneRow[] = items
+      .filter((w) => w.workItemType === 'Feature' && (w.state === 'Closed' || w.state === 'Resolved'))
+      .sort((a, b) => {
+        const aDate = a.closedDate ?? a.stateChangeDate ?? a.changedDate
+        const bDate = b.closedDate ?? b.stateChangeDate ?? b.changedDate
+        return new Date(bDate).getTime() - new Date(aDate).getTime()
+      })
+      .slice(0, 2)
+      .map((w) => ({
+        id: w.id,
+        name: w.title,
+        state: w.state,
+        targetDate: w.targetDate
+          ? format(new Date(w.targetDate), 'yyyy-MM-dd')
+          : null,
+        completed: true,
+      }))
+
+    const milestones: MilestoneRow[] = [...activeMilestones, ...completedMilestones]
 
     // Watch list: Issues and Risks
     const watchList: WatchListRow[] = items

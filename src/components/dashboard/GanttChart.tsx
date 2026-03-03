@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback, useRef } from 'react'
+import { useState, useMemo, useCallback, useRef, useEffect } from 'react'
 import { parseISO, differenceInCalendarDays, addDays, format, startOfWeek } from 'date-fns'
 import { ChevronDown, ChevronsDownUp, ChevronsUpDown, ExternalLink, FolderOpen } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -25,13 +25,14 @@ import {
   groupByAreaPath,
   flattenGroupedTree,
   collectAllExpandableIds,
+  collectFirstLevelIds,
   filterByTypes,
 } from '@/lib/workItemTree'
 
-const ROW_HEIGHT = 36
+const ROW_HEIGHT = 44
 const BAR_HEIGHT = 20
 const BAR_Y_OFFSET = (ROW_HEIGHT - BAR_HEIGHT) / 2
-const LABEL_WIDTH = 260
+const LABEL_WIDTH = 320
 const PADDING_DAYS = 7
 
 type ZoomLevel = 'month' | 'quarter' | 'year'
@@ -236,6 +237,15 @@ export function GanttChart({ workItems, isLoading, error }: GanttChartProps) {
     [groups],
   )
 
+  const firstLevelIds = useMemo(
+    () => collectFirstLevelIds(groups),
+    [groups],
+  )
+
+  useEffect(() => {
+    setExpandedIds(new Set(firstLevelIds))
+  }, [firstLevelIds])
+
   const isExpanded = expandedIds.size > 0
 
   const toggleExpandAll = useCallback(() => {
@@ -368,7 +378,7 @@ export function GanttChart({ workItems, isLoading, error }: GanttChartProps) {
                       'group flex items-center gap-1 border-b px-2 hover:bg-muted/50 transition-colors',
                       depth > 0 && 'bg-muted/20',
                     )}
-                    style={{ height: ROW_HEIGHT, paddingLeft: `${8 + depth * 16}px` }}
+                    style={{ minHeight: ROW_HEIGHT, height: ROW_HEIGHT, paddingLeft: `${8 + depth * 16}px` }}
                   >
                     {hasChildren ? (
                       <button
@@ -393,7 +403,7 @@ export function GanttChart({ workItems, isLoading, error }: GanttChartProps) {
                     </Badge>
                     <span
                       className={cn(
-                        'truncate text-xs',
+                        'line-clamp-2 text-xs leading-tight',
                         hasChildren ? 'font-semibold' : 'font-normal',
                       )}
                       title={item.title}

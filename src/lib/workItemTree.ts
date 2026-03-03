@@ -171,3 +171,18 @@ export function collectAllExpandableIds(groups: AreaGroup[]): string[] {
   }
   return ids
 }
+
+export function collectFirstLevelIds(groups: AreaGroup[]): string[] {
+  const ids: string[] = []
+  const hasAreaGroups = groups.some((g) => g.label)
+  for (const group of groups) {
+    if (group.label) {
+      ids.push(group.groupId)
+    } else if (!hasAreaGroups) {
+      for (const node of group.roots) {
+        if (node.children.length > 0) ids.push(`wi:${node.item.id}`)
+      }
+    }
+  }
+  return ids
+}

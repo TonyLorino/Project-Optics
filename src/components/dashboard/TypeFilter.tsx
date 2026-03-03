@@ -33,7 +33,6 @@ export const DEFAULT_SELECTED_TYPES = new Set<string>([
   AREA_PATH_KEY,
   'Epic',
   'Feature',
-  'User Story',
 ])
 
 interface TypeFilterProps {

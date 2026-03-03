@@ -76,3 +76,15 @@ export function parseWikiPage(markdown: string): WikiProjectData | null {
 
   return { fields, accomplishments, lookAhead, description }
 }
+
+/**
+ * Extract a URL from a value that may be a plain URL or a markdown link.
+ * Returns null if no URL is found.
+ */
+export function extractUrl(value: string): string | null {
+  const mdMatch = value.match(/\[.*?\]\((.*?)\)/)
+  if (mdMatch?.[1]) return mdMatch[1]
+  const trimmed = value.trim()
+  if (/^https?:\/\//.test(trimmed)) return trimmed
+  return null
+}
