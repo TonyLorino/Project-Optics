@@ -1,4 +1,5 @@
 import type { WorkItem, WorkItemType } from '@/types/workItem'
+import { parseVerticalTags } from './verticalHelpers'
 
 // ── Hierarchy ordering ──────────────────────────────────────
 
@@ -105,6 +106,39 @@ export function groupByAreaPath(roots: TreeNode[]): AreaGroup[] {
 
   return sorted.map(([label, nodes]) => ({
     groupId: label ? `area:${label}` : '',
+    label,
+    roots: nodes,
+  }))
+}
+
+// ── Vertical (tag) grouping ──────────────────────────────────
+
+export function groupByVertical(roots: TreeNode[]): AreaGroup[] {
+  const groups = new Map<string, TreeNode[]>()
+  for (const root of roots) {
+    const verticals = parseVerticalTags(root.item.tags)
+    if (verticals.length === 0) {
+      const existing = groups.get('')
+      if (existing) existing.push(root)
+      else groups.set('', [root])
+    } else {
+      for (const v of verticals) {
+        const existing = groups.get(v)
+        if (existing) existing.push(root)
+        else groups.set(v, [root])
+      }
+    }
+  }
+
+  const sorted = [...groups.entries()].sort(([a], [b]) => {
+    if (a === '' && b === '') return 0
+    if (a === '') return 1
+    if (b === '') return -1
+    return a.localeCompare(b)
+  })
+
+  return sorted.map(([label, nodes]) => ({
+    groupId: label ? `vtag:${label}` : '',
     label,
     roots: nodes,
   }))

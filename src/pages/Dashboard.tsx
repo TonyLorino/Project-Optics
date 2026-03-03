@@ -32,6 +32,7 @@ import { useAreaPaths } from '@/hooks/useAreaPaths'
 import { useSprintTrends } from '@/hooks/useSprintTrends'
 import { useUIStore } from '@/store/uiStore'
 import { parseSelections, filterByAreaSelections } from '@/lib/selectionHelpers'
+import { collectVerticals, filterByVerticalTags } from '@/lib/verticalHelpers'
 
 export function Dashboard() {
   const {
@@ -40,10 +41,14 @@ export function Dashboard() {
     selectedResource,
     showArchived,
     dateRange,
+    viewMode,
+    selectedVerticals,
     setSelectedProjects,
     setSelectedSprint,
     setSelectedResource,
     setDateRange,
+    setViewMode,
+    setSelectedVerticals,
     toggleArchived,
     setSyncState,
   } = useUIStore()
@@ -119,14 +124,23 @@ export function Dashboard() {
   // Unfiltered fetch for velocity trend — always shows last 6 sprints
   const { data: allWorkItemsRaw = [] } = useWorkItems(activeProjectNames)
 
-  // Apply area path filtering client-side
+  // Apply area path or vertical tag filtering client-side
   const areaFilteredWorkItems = useMemo(
-    () => filterByAreaSelections(workItemsRaw, areaFilters),
-    [workItemsRaw, areaFilters],
+    () => viewMode === 'vertical'
+      ? filterByVerticalTags(workItemsRaw, selectedVerticals)
+      : filterByAreaSelections(workItemsRaw, areaFilters),
+    [workItemsRaw, areaFilters, viewMode, selectedVerticals],
   )
   const areaFilteredAllWorkItems = useMemo(
-    () => filterByAreaSelections(allWorkItemsRaw, areaFilters),
-    [allWorkItemsRaw, areaFilters],
+    () => viewMode === 'vertical'
+      ? filterByVerticalTags(allWorkItemsRaw, selectedVerticals)
+      : filterByAreaSelections(allWorkItemsRaw, areaFilters),
+    [allWorkItemsRaw, areaFilters, viewMode, selectedVerticals],
+  )
+
+  const availableVerticals = useMemo(
+    () => collectVerticals(workItemsRaw),
+    [workItemsRaw],
   )
 
   // Extract unique resources from area-filtered items (before resource filter)
@@ -271,6 +285,11 @@ export function Dashboard() {
         onResourceChange={setSelectedResource}
         onToggleArchived={toggleArchived}
         onDateRangeChange={setDateRange}
+        viewMode={viewMode}
+        onViewModeChange={setViewMode}
+        verticals={availableVerticals}
+        selectedVerticals={selectedVerticals}
+        onVerticalsChange={setSelectedVerticals}
       />
 
       {/* KPI cards */}
@@ -387,7 +406,7 @@ export function Dashboard() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.55, duration: 0.3, ease: 'easeOut' }}
       >
-        <GanttChart workItems={workItems} isLoading={isLoading} />
+        <GanttChart workItems={workItems} isLoading={isLoading} groupMode={viewMode} />
       </motion.div>
 
       {/* Work items table */}
@@ -396,7 +415,7 @@ export function Dashboard() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.65, duration: 0.3, ease: 'easeOut' }}
       >
-        <WorkItemsTable workItems={workItems} isLoading={isLoading} />
+        <WorkItemsTable workItems={workItems} isLoading={isLoading} groupMode={viewMode} />
       </motion.div>
     </div>
   )

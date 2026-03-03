@@ -18,11 +18,13 @@ import { getWorkItemColor } from '@/lib/colors'
 import { ADO_ORGANIZATION } from '@/lib/constants'
 import { StateFilter, ALL_STATES } from './StateFilter'
 import { TypeFilter, DEFAULT_SELECTED_TYPES, AREA_PATH_KEY } from './TypeFilter'
+import type { ViewMode } from '@/store/uiStore'
 import {
   type TreeNode,
   buildTree,
   hierarchyRank,
   groupByAreaPath,
+  groupByVertical,
   flattenGroupedTree,
   collectAllExpandableIds,
   collectFirstLevelIds,
@@ -93,9 +95,10 @@ interface GanttChartProps {
   workItems: WorkItem[]
   isLoading?: boolean
   error?: Error | null
+  groupMode?: ViewMode
 }
 
-export function GanttChart({ workItems, isLoading, error }: GanttChartProps) {
+export function GanttChart({ workItems, isLoading, error, groupMode = 'area' }: GanttChartProps) {
   const [expandedIds, setExpandedIds] = useState<Set<string>>(() => new Set())
   const [tooltip, setTooltip] = useState<TooltipData | null>(null)
   const [zoomLevel, setZoomLevel] = useState<ZoomLevel>('quarter')
@@ -119,12 +122,14 @@ export function GanttChart({ workItems, isLoading, error }: GanttChartProps) {
     const roots = buildTree(filtered)
     sortNodes(roots)
     if (selectedTypes.has(AREA_PATH_KEY)) {
-      const grouped = groupByAreaPath(roots)
+      const grouped = groupMode === 'vertical'
+        ? groupByVertical(roots)
+        : groupByAreaPath(roots)
       for (const g of grouped) sortNodes(g.roots)
       return grouped
     }
     return [{ groupId: '', label: '', roots }]
-  }, [stateFilteredItems, selectedTypes])
+  }, [stateFilteredItems, selectedTypes, groupMode])
 
   const groupDateRanges = useMemo(() => {
     const ranges = new Map<string, { start: Date; end: Date }>()

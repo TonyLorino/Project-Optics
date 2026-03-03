@@ -32,12 +32,14 @@ import {
   buildTree,
   hierarchyRank,
   groupByAreaPath,
+  groupByVertical,
   flattenGroupedTree,
   collectAllExpandableIds,
   collectFirstLevelIds,
   filterByTypes,
 } from '@/lib/workItemTree'
 import { TypeFilter, DEFAULT_SELECTED_TYPES, AREA_PATH_KEY } from './TypeFilter'
+import type { ViewMode } from '@/store/uiStore'
 
 const PAGE_SIZE = TABLE_PAGE_SIZE
 
@@ -87,12 +89,14 @@ interface WorkItemsTableProps {
   workItems: WorkItem[]
   isLoading?: boolean
   error?: Error | null
+  groupMode?: ViewMode
 }
 
 export function WorkItemsTable({
   workItems,
   isLoading,
   error,
+  groupMode = 'area',
 }: WorkItemsTableProps) {
   const [sortKey, setSortKey] = useState<SortKey>('id')
   const [sortDir, setSortDir] = useState<SortDir>('asc')
@@ -111,12 +115,14 @@ export function WorkItemsTable({
     const roots = buildTree(filtered)
     sortNodes(roots, sortKey, sortDir)
     if (selectedTypes.has(AREA_PATH_KEY)) {
-      const grouped = groupByAreaPath(roots)
+      const grouped = groupMode === 'vertical'
+        ? groupByVertical(roots)
+        : groupByAreaPath(roots)
       for (const g of grouped) sortNodes(g.roots, sortKey, sortDir)
       return grouped
     }
     return [{ groupId: '', label: '', roots }]
-  }, [stateFilteredItems, sortKey, sortDir, selectedTypes])
+  }, [stateFilteredItems, sortKey, sortDir, selectedTypes, groupMode])
 
   const visibleRows = useMemo(
     () => flattenGroupedTree(groups, expandedIds),

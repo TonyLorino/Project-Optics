@@ -24,6 +24,7 @@ import { useProjectWiki } from '@/hooks/useProjectWiki'
 import { useAreaPaths } from '@/hooks/useAreaPaths'
 import { useUIStore } from '@/store/uiStore'
 import { parseSelections, filterByAreaSelections, getAreaNameFromSelection } from '@/lib/selectionHelpers'
+import { collectVerticals, filterByVerticalTags } from '@/lib/verticalHelpers'
 import { STATE_COLORS, LINKED_ISSUE_COLOR, LINKED_RISK_COLOR } from '@/lib/colors'
 import { cn } from '@/lib/utils'
 import { ADO_ORGANIZATION } from '@/lib/constants'
@@ -56,10 +57,14 @@ export function Reports() {
     selectedResource,
     showArchived,
     dateRange,
+    viewMode,
+    selectedVerticals,
     setSelectedProjects,
     setSelectedSprint,
     setSelectedResource,
     setDateRange,
+    setViewMode,
+    setSelectedVerticals,
     toggleArchived,
     setSyncState,
   } = useUIStore()
@@ -124,10 +129,17 @@ export function Reports() {
     error: workItemsError,
   } = useWorkItems(activeProjectNames, resolvedSprintPath)
 
-  // Apply area path filtering
+  // Apply area path or vertical tag filtering
   const areaFilteredWorkItems = useMemo(
-    () => filterByAreaSelections(workItemsRaw, areaFilters),
-    [workItemsRaw, areaFilters],
+    () => viewMode === 'vertical'
+      ? filterByVerticalTags(workItemsRaw, selectedVerticals)
+      : filterByAreaSelections(workItemsRaw, areaFilters),
+    [workItemsRaw, areaFilters, viewMode, selectedVerticals],
+  )
+
+  const availableVerticals = useMemo(
+    () => collectVerticals(workItemsRaw),
+    [workItemsRaw],
   )
 
   // Extract unique resources (before resource filter)
@@ -179,7 +191,7 @@ export function Reports() {
     }
   }, [workItemsError])
 
-  const multipleProjectsSelected = activeProjectNames.length > 1
+  const multipleProjectsSelected = viewMode === 'area' && activeProjectNames.length > 1
 
   const reportProject = activeProjectNames.length === 1 ? activeProjectNames[0]! : null
 
@@ -193,10 +205,20 @@ export function Reports() {
   }, [reportProject, areaFilters])
 
   const reportAreaLabel = reportAreaNames.length > 0 ? reportAreaNames.join(', ') : null
+  const reportVerticalLabel = selectedVerticals.length > 0 ? selectedVerticals.join(', ') : null
+  const reportSubLabel = viewMode === 'vertical' ? reportVerticalLabel : reportAreaLabel
 
-  const wikiAreaName = reportAreaNames.length > 0 ? reportAreaNames[0]! : null
-  const { data: wikiData, isLoading: wikiLoading } = useProjectWiki(reportProject, wikiAreaName)
-  const report = useProjectReport(workItems, iterations, reportProject, wikiData)
+  const wikiAreaName = viewMode === 'area' && reportAreaNames.length > 0 ? reportAreaNames[0]! : null
+  const { data: wikiData, isLoading: wikiLoading } = useProjectWiki(
+    viewMode === 'area' ? reportProject : null,
+    wikiAreaName,
+  )
+  const report = useProjectReport(
+    workItems,
+    iterations,
+    viewMode === 'vertical' ? (reportProject ?? activeProjectNames[0] ?? null) : reportProject,
+    viewMode === 'area' ? wikiData : undefined,
+  )
 
   const isLoading = projectsLoading || workItemsLoading || iterationsLoading
 
@@ -224,8 +246,8 @@ export function Reports() {
       const dataUrl = await toPng(slideRef.current, { pixelRatio: 1, width: 1280, height: 720 })
       const link = document.createElement('a')
       const today = new Date().toISOString().slice(0, 10)
-      const base = reportAreaLabel
-        ? `${report.projectName} - ${reportAreaLabel}`
+      const base = reportSubLabel
+        ? `${report.projectName} - ${reportSubLabel}`
         : report.projectName
       link.download = `${base} - ${today}.png`
       link.href = dataUrl
@@ -237,7 +259,7 @@ export function Reports() {
     } finally {
       setExporting(false)
     }
-  }, [report, reportAreaLabel])
+  }, [report, reportSubLabel])
 
   // ADO links
   const adoBaseUrl = `https://dev.azure.com/${ADO_ORGANIZATION}`
@@ -289,6 +311,11 @@ export function Reports() {
         onResourceChange={setSelectedResource}
         onToggleArchived={toggleArchived}
         onDateRangeChange={setDateRange}
+        viewMode={viewMode}
+        onViewModeChange={setViewMode}
+        verticals={availableVerticals}
+        selectedVerticals={selectedVerticals}
+        onVerticalsChange={setSelectedVerticals}
       />
 
       {/* Loading state */}
@@ -327,7 +354,7 @@ export function Reports() {
             <div>
               <div className="flex items-center justify-between">
                 <h2 className="text-3xl font-extrabold tracking-tight">
-                  {report.projectName}{reportAreaLabel ? ` - ${reportAreaLabel}` : ''}
+                  {report.projectName}{reportSubLabel ? ` - ${reportSubLabel}` : ''}
                 </h2>
                 <div className="flex items-center gap-1.5">
                   {(() => {
@@ -401,53 +428,55 @@ export function Reports() {
             </div>
           </motion.div>
 
-          {/* ── Row 1: Accomplishments + Look Ahead ────────────── */}
-          <motion.div
-            className="grid grid-cols-1 lg:grid-cols-2 gap-4"
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.25, duration: 0.3, ease: 'easeOut' }}
-          >
-            <Card className="py-0 gap-0">
-              <CardHeader className="px-4 pt-3 pb-0">
-                <CardTitle className="text-base">Accomplishments</CardTitle>
-              </CardHeader>
-              <CardContent className="px-4 pb-3 pt-1">
-                {wikiLoading ? (
-                  <Skeleton className="h-20 w-full" />
-                ) : report.accomplishments ? (
-                  <div className="prose prose-sm dark:prose-invert max-w-none [&_ul]:my-1.5 [&_ol]:my-1.5 [&_li]:my-0.5 [&_p]:my-1.5 leading-snug">
-                    <Markdown>{report.accomplishments}</Markdown>
-                  </div>
-                ) : (
-                  <p className="text-sm text-muted-foreground">
-                    —
-                  </p>
-                )}
-              </CardContent>
-            </Card>
+          {/* ── Row 1: Accomplishments + Look Ahead (area mode only) */}
+          {viewMode === 'area' && (
+            <motion.div
+              className="grid grid-cols-1 lg:grid-cols-2 gap-4"
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.25, duration: 0.3, ease: 'easeOut' }}
+            >
+              <Card className="py-0 gap-0">
+                <CardHeader className="px-4 pt-3 pb-0">
+                  <CardTitle className="text-base">Accomplishments</CardTitle>
+                </CardHeader>
+                <CardContent className="px-4 pb-3 pt-1">
+                  {wikiLoading ? (
+                    <Skeleton className="h-20 w-full" />
+                  ) : report.accomplishments ? (
+                    <div className="prose prose-sm dark:prose-invert max-w-none [&_ul]:my-1.5 [&_ol]:my-1.5 [&_li]:my-0.5 [&_p]:my-1.5 leading-snug">
+                      <Markdown>{report.accomplishments}</Markdown>
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">
+                      —
+                    </p>
+                  )}
+                </CardContent>
+              </Card>
 
-            <Card className="py-0 gap-0">
-              <CardHeader className="px-4 pt-3 pb-0">
-                <CardTitle className="text-base">
-                  Look Ahead (Next 1-2 Weeks)
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="px-4 pb-3 pt-1">
-                {wikiLoading ? (
-                  <Skeleton className="h-20 w-full" />
-                ) : report.lookAhead ? (
-                  <div className="prose prose-sm dark:prose-invert max-w-none [&_ul]:my-1.5 [&_ol]:my-1.5 [&_li]:my-0.5 [&_p]:my-1.5 leading-snug">
-                    <Markdown>{report.lookAhead}</Markdown>
-                  </div>
-                ) : (
-                  <p className="text-sm text-muted-foreground">
-                    —
-                  </p>
-                )}
-              </CardContent>
-            </Card>
-          </motion.div>
+              <Card className="py-0 gap-0">
+                <CardHeader className="px-4 pt-3 pb-0">
+                  <CardTitle className="text-base">
+                    Look Ahead (Next 1-2 Weeks)
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="px-4 pb-3 pt-1">
+                  {wikiLoading ? (
+                    <Skeleton className="h-20 w-full" />
+                  ) : report.lookAhead ? (
+                    <div className="prose prose-sm dark:prose-invert max-w-none [&_ul]:my-1.5 [&_ol]:my-1.5 [&_li]:my-0.5 [&_p]:my-1.5 leading-snug">
+                      <Markdown>{report.lookAhead}</Markdown>
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">
+                      —
+                    </p>
+                  )}
+                </CardContent>
+              </Card>
+            </motion.div>
+          )}
 
           {/* ── Row 2: Milestones + Watch List ─────────────────── */}
           <motion.div
@@ -543,8 +572,8 @@ export function Reports() {
             </Card>
           </motion.div>
 
-          {/* Description */}
-          {report.description && (
+          {/* Description (wiki-sourced, area mode only) */}
+          {viewMode === 'area' && report.description && (
             <motion.div
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
@@ -579,12 +608,12 @@ export function Reports() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.45, duration: 0.3, ease: 'easeOut' }}
           >
-            <GanttChart workItems={workItems} isLoading={isLoading} />
+            <GanttChart workItems={workItems} isLoading={isLoading} groupMode={viewMode} />
           </motion.div>
 
           {/* Offscreen slide for image capture */}
           <div aria-hidden style={{ position: 'absolute', left: -9999, top: 0, overflow: 'hidden' }}>
-            <ReportSlide ref={slideRef} report={report} areaName={reportAreaLabel} />
+            <ReportSlide ref={slideRef} report={report} areaName={reportSubLabel} />
           </div>
         </div>
       )}

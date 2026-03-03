@@ -1,6 +1,8 @@
 import { useMemo } from 'react'
 import { RotateCcw } from 'lucide-react'
 import { ProjectSelector } from './ProjectSelector'
+import { VerticalSelector } from './VerticalSelector'
+import { ViewModeToggle } from './ViewModeToggle'
 import { SprintSelector } from './SprintSelector'
 import { ResourceSelector } from './ResourceSelector'
 import { DateRangeSelector } from './DateRangeSelector'
@@ -8,6 +10,7 @@ import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip'
 import type { Project } from '@/types/project'
 import type { Sprint } from '@/types/sprint'
+import type { ViewMode } from '@/store/uiStore'
 
 interface FilterBarProps {
   projects: Project[]
@@ -24,6 +27,11 @@ interface FilterBarProps {
   onResourceChange: (resource: string | null) => void
   onToggleArchived: () => void
   onDateRangeChange?: (range: { from: string; to: string } | null) => void
+  viewMode?: ViewMode
+  onViewModeChange?: (mode: ViewMode) => void
+  verticals?: string[]
+  selectedVerticals?: string[]
+  onVerticalsChange?: (verticals: string[]) => void
 }
 
 export function FilterBar({
@@ -41,6 +49,11 @@ export function FilterBar({
   onResourceChange,
   onToggleArchived,
   onDateRangeChange,
+  viewMode,
+  onViewModeChange,
+  verticals,
+  selectedVerticals,
+  onVerticalsChange,
 }: FilterBarProps) {
   const hasActiveFilters = useMemo(() => {
     return (
@@ -56,21 +69,44 @@ export function FilterBar({
     onDateRangeChange?.(null)
   }
 
+  const showVerticalMode = viewMode !== undefined && onViewModeChange !== undefined
+
   return (
     <div className="flex flex-col sm:flex-row items-start sm:items-end gap-4 flex-wrap">
-      <div className="flex flex-col gap-1">
-        <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider pl-2">
-          Project
-        </span>
-        <ProjectSelector
-          projects={projects}
-          selected={selectedProjects}
-          showArchived={showArchived}
-          areaPaths={areaPaths}
-          onSelectedChange={onProjectsChange}
-          onToggleArchived={onToggleArchived}
-        />
-      </div>
+      {showVerticalMode && (
+        <div className="flex flex-col gap-1">
+          <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider pl-2">
+            View
+          </span>
+          <ViewModeToggle value={viewMode} onChange={onViewModeChange} />
+        </div>
+      )}
+      {viewMode === 'vertical' && verticals && onVerticalsChange ? (
+        <div className="flex flex-col gap-1">
+          <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider pl-2">
+            Tags
+          </span>
+          <VerticalSelector
+            verticals={verticals}
+            selected={selectedVerticals ?? []}
+            onSelectedChange={onVerticalsChange}
+          />
+        </div>
+      ) : (
+        <div className="flex flex-col gap-1">
+          <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider pl-2">
+            Project
+          </span>
+          <ProjectSelector
+            projects={projects}
+            selected={selectedProjects}
+            showArchived={showArchived}
+            areaPaths={areaPaths}
+            onSelectedChange={onProjectsChange}
+            onToggleArchived={onToggleArchived}
+          />
+        </div>
+      )}
       <div className="flex flex-col gap-1">
         <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider pl-2">
           Sprint

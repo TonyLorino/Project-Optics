@@ -27,6 +27,7 @@ import {
 import { useAreaPaths } from '@/hooks/useAreaPaths'
 import { useUIStore } from '@/store/uiStore'
 import { parseSelections, filterByAreaSelections } from '@/lib/selectionHelpers'
+import { collectVerticals, filterByVerticalTags } from '@/lib/verticalHelpers'
 
 export function WatchList() {
   const {
@@ -35,10 +36,14 @@ export function WatchList() {
     selectedResource,
     showArchived,
     dateRange,
+    viewMode,
+    selectedVerticals,
     setSelectedProjects,
     setSelectedSprint,
     setSelectedResource,
     setDateRange,
+    setViewMode,
+    setSelectedVerticals,
     toggleArchived,
     setSyncState,
   } = useUIStore()
@@ -105,8 +110,15 @@ export function WatchList() {
   } = useWorkItems(activeProjectNames, resolvedSprintPath)
 
   const areaFilteredWorkItems = useMemo(
-    () => filterByAreaSelections(workItemsRaw, areaFilters),
-    [workItemsRaw, areaFilters],
+    () => viewMode === 'vertical'
+      ? filterByVerticalTags(workItemsRaw, selectedVerticals)
+      : filterByAreaSelections(workItemsRaw, areaFilters),
+    [workItemsRaw, areaFilters, viewMode, selectedVerticals],
+  )
+
+  const availableVerticals = useMemo(
+    () => collectVerticals(workItemsRaw),
+    [workItemsRaw],
   )
 
   const uniqueResources = useMemo(() => {
@@ -216,6 +228,11 @@ export function WatchList() {
         onResourceChange={setSelectedResource}
         onToggleArchived={toggleArchived}
         onDateRangeChange={setDateRange}
+        viewMode={viewMode}
+        onViewModeChange={setViewMode}
+        verticals={availableVerticals}
+        selectedVerticals={selectedVerticals}
+        onVerticalsChange={setSelectedVerticals}
       />
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
