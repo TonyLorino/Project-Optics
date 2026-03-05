@@ -31,10 +31,11 @@ import {
   filterByTypes,
 } from '@/lib/workItemTree'
 
-const ROW_HEIGHT = 44
+const ROW_HEIGHT = 36
 const BAR_HEIGHT = 20
 const BAR_Y_OFFSET = (ROW_HEIGHT - BAR_HEIGHT) / 2
-const LABEL_WIDTH = 320
+const LABEL_WIDTH = 360
+const BADGE_STRIP_WIDTH = 56
 const PADDING_DAYS = 7
 
 type ZoomLevel = 'month' | 'quarter' | 'year'
@@ -101,6 +102,7 @@ interface GanttChartProps {
 export function GanttChart({ workItems, isLoading, error, groupMode = 'area' }: GanttChartProps) {
   const [expandedIds, setExpandedIds] = useState<Set<string>>(() => new Set())
   const [tooltip, setTooltip] = useState<TooltipData | null>(null)
+  const [hoveredRowId, setHoveredRowId] = useState<string | null>(null)
   const [zoomLevel, setZoomLevel] = useState<ZoomLevel>('quarter')
   const [selectedTypes, setSelectedTypes] = useState<Set<string>>(() => new Set(DEFAULT_SELECTED_TYPES))
   const [selectedStates, setSelectedStates] = useState<Set<WorkItemState>>(() => new Set(ALL_STATES))
@@ -348,6 +350,7 @@ export function GanttChart({ workItems, isLoading, error, groupMode = 'area' }: 
               {/* Rows */}
               {visibleRows.map((row) => {
                 if (row.kind === 'group') {
+                  const isGroupHovered = hoveredRowId === row.groupId
                   return (
                     <div
                       key={row.groupId}
@@ -366,7 +369,19 @@ export function GanttChart({ workItems, isLoading, error, groupMode = 'area' }: 
                         />
                       </button>
                       <FolderOpen className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                      <span className="truncate text-xs font-semibold" title={row.label}>
+                      <span
+                        className={cn(
+                          'text-xs font-semibold',
+                          isGroupHovered
+                            ? 'relative z-20 bg-muted rounded px-1 -mx-1 py-0.5 shadow-sm border'
+                            : 'truncate',
+                        )}
+                        onMouseEnter={(e) => {
+                          const el = e.currentTarget
+                          if (el.scrollWidth > el.clientWidth) setHoveredRowId(row.groupId)
+                        }}
+                        onMouseLeave={() => setHoveredRowId(null)}
+                      >
                         {row.label}
                       </span>
                     </div>
@@ -376,6 +391,8 @@ export function GanttChart({ workItems, isLoading, error, groupMode = 'area' }: 
                 const { item, depth, hasChildren } = row
                 const expandId = `wi:${item.id}`
 
+                const isHovered = hoveredRowId === expandId
+
                 return (
                   <div
                     key={item.id}
@@ -383,7 +400,7 @@ export function GanttChart({ workItems, isLoading, error, groupMode = 'area' }: 
                       'group flex items-center gap-1 border-b px-2 hover:bg-muted/50 transition-colors',
                       depth > 0 && 'bg-muted/20',
                     )}
-                    style={{ minHeight: ROW_HEIGHT, height: ROW_HEIGHT, paddingLeft: `${8 + depth * 16}px` }}
+                    style={{ minHeight: ROW_HEIGHT, height: ROW_HEIGHT, paddingLeft: `${8 + depth * 12}px` }}
                   >
                     {hasChildren ? (
                       <button
@@ -400,18 +417,19 @@ export function GanttChart({ workItems, isLoading, error, groupMode = 'area' }: 
                     ) : (
                       <span className="shrink-0 w-4" />
                     )}
-                    <Badge
-                      variant="outline"
-                      className="shrink-0 text-[10px] px-1 py-0 font-normal leading-tight"
-                    >
-                      {item.workItemType === 'User Story' ? 'Story' : item.workItemType}
-                    </Badge>
                     <span
                       className={cn(
-                        'line-clamp-2 text-xs leading-tight',
+                        'text-xs leading-tight',
                         hasChildren ? 'font-semibold' : 'font-normal',
+                        isHovered
+                          ? 'relative z-20 bg-background rounded px-1 -mx-1 py-0.5 shadow-sm border'
+                          : 'line-clamp-2',
                       )}
-                      title={item.title}
+                      onMouseEnter={(e) => {
+                        const el = e.currentTarget
+                        if (el.scrollHeight > el.clientHeight) setHoveredRowId(expandId)
+                      }}
+                      onMouseLeave={() => setHoveredRowId(null)}
                     >
                       {item.title}
                     </span>
@@ -423,6 +441,40 @@ export function GanttChart({ workItems, isLoading, error, groupMode = 'area' }: 
                     >
                       <ExternalLink className="h-3 w-3 text-muted-foreground hover:text-foreground" />
                     </a>
+                  </div>
+                )
+              })}
+            </div>
+
+            {/* Badge strip */}
+            <div className="shrink-0 border-r bg-background" style={{ width: BADGE_STRIP_WIDTH }}>
+              <div className="h-8 border-b flex items-center justify-center">
+                <span className="text-[10px] font-medium text-muted-foreground">Type</span>
+              </div>
+              <div className="h-5 border-b bg-muted/20" />
+              {visibleRows.map((row) => {
+                if (row.kind === 'group') {
+                  return (
+                    <div
+                      key={row.groupId}
+                      className="border-b bg-muted/40"
+                      style={{ height: ROW_HEIGHT }}
+                    />
+                  )
+                }
+                const { item } = row
+                return (
+                  <div
+                    key={item.id}
+                    className="flex items-center justify-center border-b"
+                    style={{ height: ROW_HEIGHT }}
+                  >
+                    <Badge
+                      variant="outline"
+                      className="text-[10px] px-1 py-0 font-normal leading-tight"
+                    >
+                      {item.workItemType === 'User Story' ? 'Story' : item.workItemType}
+                    </Badge>
                   </div>
                 )
               })}
