@@ -2,18 +2,14 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 
 export type ActivePage = 'dashboard' | 'reports' | 'watchlist'
-export type ViewMode = 'area' | 'vertical'
 
 interface UIState {
   // Navigation
   activePage: ActivePage
 
-  // View mode
-  viewMode: ViewMode
-
   // Filters
   selectedProjects: string[]
-  selectedVerticals: string[]
+  selectedTags: string[]
   selectedSprint: string | null
   selectedResource: string | null
   showArchived: boolean
@@ -29,9 +25,8 @@ interface UIState {
 
   // Actions
   setActivePage: (page: ActivePage) => void
-  setViewMode: (mode: ViewMode) => void
   setSelectedProjects: (projects: string[]) => void
-  setSelectedVerticals: (verticals: string[]) => void
+  setSelectedTags: (tags: string[]) => void
   setSelectedSprint: (sprint: string | null) => void
   setSelectedResource: (resource: string | null) => void
   setDateRange: (range: { from: string; to: string } | null) => void
@@ -44,9 +39,8 @@ export const useUIStore = create<UIState>()(
   persist(
     (set) => ({
       activePage: 'dashboard',
-      viewMode: 'area',
       selectedProjects: [],
-      selectedVerticals: [],
+      selectedTags: [],
       selectedSprint: null,
       selectedResource: null,
       showArchived: false,
@@ -59,9 +53,8 @@ export const useUIStore = create<UIState>()(
       syncRefetch: null,
 
       setActivePage: (page) => set({ activePage: page }),
-      setViewMode: (mode) => set({ viewMode: mode }),
       setSelectedProjects: (projects) => set({ selectedProjects: projects }),
-      setSelectedVerticals: (verticals) => set({ selectedVerticals: verticals }),
+      setSelectedTags: (tags) => set({ selectedTags: tags }),
       setSelectedSprint: (sprint) => set({ selectedSprint: sprint }),
       setSelectedResource: (resource) => set({ selectedResource: resource }),
       setDateRange: (range) => set({ dateRange: range }),
@@ -76,9 +69,8 @@ export const useUIStore = create<UIState>()(
       name: 'optics:ui-store',
       partialize: (state) => ({
         activePage: state.activePage,
-        viewMode: state.viewMode,
         selectedProjects: state.selectedProjects,
-        selectedVerticals: state.selectedVerticals,
+        selectedTags: state.selectedTags,
         selectedSprint: state.selectedSprint,
         selectedResource: state.selectedResource,
         showArchived: state.showArchived,

@@ -1,7 +1,7 @@
 import axios from 'axios'
 import { adoClient } from '@/services/azureDevOps'
 import { ADO_API_VERSION } from '@/lib/constants'
-import { parseWikiPage, type WikiProjectData } from '@/lib/wikiParser'
+import { parseWikiPage, type WikiProjectData, type WikiConflictError } from '@/lib/wikiParser'
 
 interface ADOWiki {
   id: string
@@ -14,19 +14,49 @@ interface ADOWikiPage {
   path: string
 }
 
-const WIKI_PAGE_BASE = '/ProjectOptics'
+interface ADOWikiPageInfo {
+  path: string
+  subPages?: ADOWikiPageInfo[]
+}
+
+const WIKI_PAGE_NAME = 'ProjectOptics'
+
+function getLeafName(path: string): string {
+  const segments = path.split('/')
+  return segments[segments.length - 1] ?? ''
+}
+
+function findPagesByName(tree: ADOWikiPageInfo, targetName: string): string[] {
+  const matches: string[] = []
+  const target = targetName.toLowerCase()
+
+  function walk(node: ADOWikiPageInfo): void {
+    if (getLeafName(node.path).toLowerCase() === target) {
+      matches.push(node.path)
+    }
+    if (node.subPages) {
+      for (const child of node.subPages) {
+        walk(child)
+      }
+    }
+  }
+
+  walk(tree)
+  return matches
+}
 
 /**
  * Fetch and parse the ProjectOptics wiki page for a given project.
- * When areaName is provided, looks for /ProjectOptics-{areaName} instead.
- * Returns null if the project has no wiki or the page doesn't exist.
+ * Searches the entire wiki tree for a page named ProjectOptics (or
+ * ProjectOptics-{areaName}). Returns a conflict error if multiple
+ * pages share the same name.
  */
 export async function fetchProjectWikiData(
   projectName: string,
   areaName?: string | null,
-): Promise<WikiProjectData | null> {
+): Promise<WikiProjectData | WikiConflictError | null> {
   const encoded = encodeURIComponent(projectName)
-  const pagePath = areaName ? `${WIKI_PAGE_BASE}-${areaName}` : WIKI_PAGE_BASE
+  const targetPageName = areaName ? `${WIKI_PAGE_NAME}-${areaName}` : WIKI_PAGE_NAME
 
   let wikis: ADOWiki[]
   try {
@@ -46,9 +76,34 @@ export async function fetchProjectWikiData(
     return null
   }
 
-  let page: ADOWikiPage
-  const pageUrl = `/${encoded}/_apis/wiki/wikis/${projectWiki.id}/pages?path=${encodeURIComponent(pagePath)}&includeContent=true&api-version=${ADO_API_VERSION}`
+  let pageTree: ADOWikiPageInfo
   try {
+    const treeUrl = `/${encoded}/_apis/wiki/wikis/${projectWiki.id}/pages?path=/&recursionLevel=full&api-version=${ADO_API_VERSION}`
+    const { data } = await adoClient.get<ADOWikiPageInfo>(treeUrl)
+    pageTree = data
+    console.debug(`[Wiki] ${projectName}: fetched page tree`)
+  } catch (err) {
+    console.warn(`[Wiki] ${projectName}: failed to fetch wiki page tree`, err)
+    return null
+  }
+
+  const matchedPaths = findPagesByName(pageTree, targetPageName)
+  console.debug(`[Wiki] ${projectName}: searching for "${targetPageName}", found ${matchedPaths.length} match(es)`, matchedPaths)
+
+  if (matchedPaths.length === 0) {
+    console.debug(`[Wiki] ${projectName}: page "${targetPageName}" not found anywhere in wiki`)
+    return null
+  }
+
+  if (matchedPaths.length > 1) {
+    console.warn(`[Wiki] ${projectName}: multiple pages named "${targetPageName}" found`, matchedPaths)
+    return { conflict: true, paths: matchedPaths }
+  }
+
+  const pagePath = matchedPaths[0]!
+  let page: ADOWikiPage
+  try {
+    const pageUrl = `/${encoded}/_apis/wiki/wikis/${projectWiki.id}/pages?path=${encodeURIComponent(pagePath)}&includeContent=true&api-version=${ADO_API_VERSION}`
     const { data } = await adoClient.get<ADOWikiPage>(pageUrl)
     page = data
     console.debug(`[Wiki] ${projectName}: fetched page at ${pagePath}`, { path: page.path, hasContent: !!page.content, contentLength: page.content?.length })

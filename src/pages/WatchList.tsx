@@ -27,7 +27,7 @@ import {
 import { useAreaPaths } from '@/hooks/useAreaPaths'
 import { useUIStore } from '@/store/uiStore'
 import { parseSelections, filterByAreaSelections } from '@/lib/selectionHelpers'
-import { collectVerticals, filterByVerticalTags } from '@/lib/verticalHelpers'
+import { collectTags, filterByTags } from '@/lib/tagHelpers'
 
 export function WatchList() {
   const {
@@ -36,14 +36,12 @@ export function WatchList() {
     selectedResource,
     showArchived,
     dateRange,
-    viewMode,
-    selectedVerticals,
+    selectedTags,
     setSelectedProjects,
     setSelectedSprint,
     setSelectedResource,
     setDateRange,
-    setViewMode,
-    setSelectedVerticals,
+    setSelectedTags,
     toggleArchived,
     setSyncState,
   } = useUIStore()
@@ -110,14 +108,12 @@ export function WatchList() {
   } = useWorkItems(activeProjectNames, resolvedSprintPath)
 
   const areaFilteredWorkItems = useMemo(
-    () => viewMode === 'vertical'
-      ? filterByVerticalTags(workItemsRaw, selectedVerticals)
-      : filterByAreaSelections(workItemsRaw, areaFilters),
-    [workItemsRaw, areaFilters, viewMode, selectedVerticals],
+    () => filterByTags(filterByAreaSelections(workItemsRaw, areaFilters), selectedTags),
+    [workItemsRaw, areaFilters, selectedTags],
   )
 
-  const availableVerticals = useMemo(
-    () => collectVerticals(workItemsRaw),
+  const availableTags = useMemo(
+    () => collectTags(workItemsRaw),
     [workItemsRaw],
   )
 
@@ -228,11 +224,9 @@ export function WatchList() {
         onResourceChange={setSelectedResource}
         onToggleArchived={toggleArchived}
         onDateRangeChange={setDateRange}
-        viewMode={viewMode}
-        onViewModeChange={setViewMode}
-        verticals={availableVerticals}
-        selectedVerticals={selectedVerticals}
-        onVerticalsChange={setSelectedVerticals}
+        tags={availableTags}
+        selectedTags={selectedTags}
+        onTagsChange={setSelectedTags}
       />
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">

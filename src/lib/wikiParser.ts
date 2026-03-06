@@ -9,6 +9,17 @@ export interface WikiProjectData {
   description: string | null
 }
 
+export interface WikiConflictError {
+  conflict: true
+  paths: string[]
+}
+
+export function isWikiConflict(
+  data: WikiProjectData | WikiConflictError | null | undefined,
+): data is WikiConflictError {
+  return data != null && 'conflict' in data && data.conflict === true
+}
+
 /**
  * Split markdown into sections keyed by their `# Heading` text.
  * Returns a map of lowercased heading -> body content.

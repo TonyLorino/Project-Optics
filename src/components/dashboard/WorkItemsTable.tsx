@@ -32,14 +32,13 @@ import {
   buildTree,
   hierarchyRank,
   groupByAreaPath,
-  groupByVertical,
+  groupByTag,
   flattenGroupedTree,
   collectAllExpandableIds,
   collectFirstLevelIds,
   filterByTypes,
 } from '@/lib/workItemTree'
 import { TypeFilter, DEFAULT_SELECTED_TYPES, AREA_PATH_KEY } from './TypeFilter'
-import type { ViewMode } from '@/store/uiStore'
 
 const PAGE_SIZE = TABLE_PAGE_SIZE
 
@@ -89,7 +88,7 @@ interface WorkItemsTableProps {
   workItems: WorkItem[]
   isLoading?: boolean
   error?: Error | null
-  groupMode?: ViewMode
+  groupMode?: 'area' | 'tag'
 }
 
 export function WorkItemsTable({
@@ -115,8 +114,8 @@ export function WorkItemsTable({
     const roots = buildTree(filtered)
     sortNodes(roots, sortKey, sortDir)
     if (selectedTypes.has(AREA_PATH_KEY)) {
-      const grouped = groupMode === 'vertical'
-        ? groupByVertical(roots)
+      const grouped = groupMode === 'tag'
+        ? groupByTag(roots)
         : groupByAreaPath(roots)
       for (const g of grouped) sortNodes(g.roots, sortKey, sortDir)
       return grouped

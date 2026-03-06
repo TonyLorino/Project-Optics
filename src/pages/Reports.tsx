@@ -24,11 +24,11 @@ import { useProjectWiki } from '@/hooks/useProjectWiki'
 import { useAreaPaths } from '@/hooks/useAreaPaths'
 import { useUIStore } from '@/store/uiStore'
 import { parseSelections, filterByAreaSelections, getAreaNameFromSelection } from '@/lib/selectionHelpers'
-import { collectVerticals, filterByVerticalTags } from '@/lib/verticalHelpers'
+import { collectTags, filterByTags, getTagDisplayValue } from '@/lib/tagHelpers'
 import { STATE_COLORS, LINKED_ISSUE_COLOR, LINKED_RISK_COLOR } from '@/lib/colors'
 import { cn } from '@/lib/utils'
 import { ADO_ORGANIZATION } from '@/lib/constants'
-import { extractUrl } from '@/lib/wikiParser'
+import { extractUrl, isWikiConflict } from '@/lib/wikiParser'
 import { GanttChart } from '@/components/dashboard/GanttChart'
 
 function StatusDot({ status }: { status: 'green' | 'yellow' | 'red' }) {
@@ -57,19 +57,17 @@ export function Reports() {
     selectedResource,
     showArchived,
     dateRange,
-    viewMode,
-    selectedVerticals,
+    selectedTags,
     setSelectedProjects,
     setSelectedSprint,
     setSelectedResource,
     setDateRange,
-    setViewMode,
-    setSelectedVerticals,
+    setSelectedTags,
     toggleArchived,
     setSyncState,
   } = useUIStore()
 
-  // ── Data fetching (same as Dashboard) ──────────────────────
+  // ── Data fetching ──────────────────────────────────────────
 
   const { data: projects = [], isLoading: projectsLoading } = useProjects()
 
@@ -84,7 +82,6 @@ export function Reports() {
     }
   }, [projects, selectedProjects.length, showArchived, setSelectedProjects])
 
-  // Parse selections into project names and area filters
   const { projectNames: parsedProjectNames, areaFilters } = useMemo(
     () => parseSelections(selectedProjects),
     [selectedProjects],
@@ -98,7 +95,6 @@ export function Reports() {
     return parsedProjectNames.filter((name) => visibleNames.has(name))
   }, [projects, parsedProjectNames, showArchived])
 
-  // Fetch area paths for the selector
   const allVisibleProjectNames = useMemo(() => {
     const visible = showArchived
       ? projects
@@ -129,23 +125,20 @@ export function Reports() {
     error: workItemsError,
   } = useWorkItems(activeProjectNames, resolvedSprintPath)
 
-  // Apply area path or vertical tag filtering
-  const areaFilteredWorkItems = useMemo(
-    () => viewMode === 'vertical'
-      ? filterByVerticalTags(workItemsRaw, selectedVerticals)
-      : filterByAreaSelections(workItemsRaw, areaFilters),
-    [workItemsRaw, areaFilters, viewMode, selectedVerticals],
+  // Apply area path filtering, then tag filtering (both additive)
+  const filteredWorkItems = useMemo(
+    () => filterByTags(filterByAreaSelections(workItemsRaw, areaFilters), selectedTags),
+    [workItemsRaw, areaFilters, selectedTags],
   )
 
-  const availableVerticals = useMemo(
-    () => collectVerticals(workItemsRaw),
+  const availableTags = useMemo(
+    () => collectTags(workItemsRaw),
     [workItemsRaw],
   )
 
-  // Extract unique resources (before resource filter)
   const uniqueResources = useMemo(() => {
     const map = new Map<string, { displayName: string; uniqueName: string }>()
-    for (const wi of areaFilteredWorkItems) {
+    for (const wi of filteredWorkItems) {
       if (wi.assignedTo) {
         map.set(wi.assignedTo.uniqueName, {
           displayName: wi.assignedTo.displayName,
@@ -156,17 +149,15 @@ export function Reports() {
     return Array.from(map.values()).sort((a, b) =>
       a.displayName.localeCompare(b.displayName),
     )
-  }, [areaFilteredWorkItems])
+  }, [filteredWorkItems])
 
-  // Apply resource filter
   const resourceFilteredWorkItems = useMemo(
     () => selectedResource
-      ? areaFilteredWorkItems.filter((wi) => wi.assignedTo?.uniqueName === selectedResource)
-      : areaFilteredWorkItems,
-    [areaFilteredWorkItems, selectedResource],
+      ? filteredWorkItems.filter((wi) => wi.assignedTo?.uniqueName === selectedResource)
+      : filteredWorkItems,
+    [filteredWorkItems, selectedResource],
   )
 
-  // Apply date range filter
   const workItems = useMemo(() => {
     if (!dateRange) return resourceFilteredWorkItems
     const from = new Date(dateRange.from).getTime()
@@ -191,9 +182,15 @@ export function Reports() {
     }
   }, [workItemsError])
 
-  const multipleProjectsSelected = viewMode === 'area' && activeProjectNames.length > 1
+  // ── Report resolution ──────────────────────────────────────
 
-  const reportProject = activeProjectNames.length === 1 ? activeProjectNames[0]! : null
+  const hasTags = selectedTags.length > 0
+  const isSingleProject = activeProjectNames.length === 1
+  const isMultiProject = activeProjectNames.length > 1
+  const isCrossProjectReport = isMultiProject && hasTags
+  const showMultiProjectGate = isMultiProject && !hasTags
+
+  const reportProject = isSingleProject ? activeProjectNames[0]! : null
 
   const reportAreaNames = useMemo(() => {
     if (!reportProject) return []
@@ -205,20 +202,34 @@ export function Reports() {
   }, [reportProject, areaFilters])
 
   const reportAreaLabel = reportAreaNames.length > 0 ? reportAreaNames.join(', ') : null
-  const reportVerticalLabel = selectedVerticals.length > 0 ? selectedVerticals.join(', ') : null
-  const reportSubLabel = viewMode === 'vertical' ? reportVerticalLabel : reportAreaLabel
+  const reportTagLabel = hasTags ? selectedTags.map(getTagDisplayValue).join(', ') : null
 
-  const wikiAreaName = viewMode === 'area' && reportAreaNames.length > 0 ? reportAreaNames[0]! : null
-  const { data: wikiData, isLoading: wikiLoading } = useProjectWiki(
-    viewMode === 'area' ? reportProject : null,
+  const reportSubLabel = useMemo(() => {
+    const parts: string[] = []
+    if (reportAreaLabel) parts.push(reportAreaLabel)
+    if (reportTagLabel && !isCrossProjectReport) parts.push(reportTagLabel)
+    return parts.length > 0 ? parts.join(' - ') : null
+  }, [reportAreaLabel, reportTagLabel, isCrossProjectReport])
+
+  // Wiki only loads for single-project, non-cross-project reports
+  const wikiAreaName = !isCrossProjectReport && reportAreaNames.length > 0 ? reportAreaNames[0]! : null
+  const { data: wikiRaw, isLoading: wikiLoading } = useProjectWiki(
+    isCrossProjectReport ? null : reportProject,
     wikiAreaName,
   )
+
+  const wikiConflict = isWikiConflict(wikiRaw) ? wikiRaw : null
+  const wikiData = wikiConflict ? undefined : wikiRaw
+
   const report = useProjectReport(
     workItems,
     iterations,
-    viewMode === 'vertical' ? (reportProject ?? activeProjectNames[0] ?? null) : reportProject,
-    viewMode === 'area' ? wikiData : undefined,
+    isCrossProjectReport ? null : reportProject,
+    isCrossProjectReport ? undefined : wikiData,
+    isCrossProjectReport ? reportTagLabel ?? undefined : undefined,
   )
+
+  const showWikiSections = !isCrossProjectReport && reportProject != null
 
   const isLoading = projectsLoading || workItemsLoading || iterationsLoading
 
@@ -234,7 +245,7 @@ export function Reports() {
     )
   }, [dataUpdatedAt, isFetching, stableRefetch, setSyncState])
 
-  // ── Slide export ─────────────────────────────────────────
+  // ── Slide export ───────────────────────────────────────────
   const slideRef = useRef<HTMLDivElement>(null)
   const [exporting, setExporting] = useState(false)
 
@@ -261,8 +272,8 @@ export function Reports() {
     }
   }, [report, reportSubLabel])
 
-  // ADO links
   const adoBaseUrl = `https://dev.azure.com/${ADO_ORGANIZATION}`
+  const groupMode = hasTags ? 'tag' as const : 'area' as const
 
   return (
     <div className="p-4 md:px-6 md:pt-4 md:pb-6 lg:px-8 lg:pt-4 lg:pb-8 space-y-6 max-w-[1600px] mx-auto">
@@ -311,11 +322,9 @@ export function Reports() {
         onResourceChange={setSelectedResource}
         onToggleArchived={toggleArchived}
         onDateRangeChange={setDateRange}
-        viewMode={viewMode}
-        onViewModeChange={setViewMode}
-        verticals={availableVerticals}
-        selectedVerticals={selectedVerticals}
-        onVerticalsChange={setSelectedVerticals}
+        tags={availableTags}
+        selectedTags={selectedTags}
+        onTagsChange={setSelectedTags}
       />
 
       {/* Loading state */}
@@ -329,19 +338,19 @@ export function Reports() {
         </div>
       )}
 
-      {/* Multi-project gate */}
-      {!isLoading && multipleProjectsSelected && (
+      {/* Multi-project gate (only when no tags are filtering) */}
+      {!isLoading && showMultiProjectGate && (
         <Card>
           <CardContent className="py-12">
             <p className="text-center text-muted-foreground">
-              Please select a single project to view its report. Multiple area paths within one project are supported.
+              Please select a single project to view its report, or select a tag to view a cross-project report.
             </p>
           </CardContent>
         </Card>
       )}
 
       {/* Report card */}
-      {!isLoading && !multipleProjectsSelected && report && (
+      {!isLoading && !showMultiProjectGate && report && (
         <div className="space-y-6">
           {/* ── Header area ──────────────────────────────────────── */}
           <motion.div
@@ -377,32 +386,36 @@ export function Reports() {
                       </Tooltip>
                     )
                   })()}
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <a
-                        href={`${adoBaseUrl}/${encodeURIComponent(report.projectName)}/_backlogs/backlog`}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="text-muted-foreground hover:text-foreground transition-colors p-1.5 rounded-md hover:bg-muted/50"
-                      >
-                        <ClipboardList className="h-4 w-4" />
-                      </a>
-                    </TooltipTrigger>
-                    <TooltipContent>Backlog</TooltipContent>
-                  </Tooltip>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <a
-                        href={`${adoBaseUrl}/${encodeURIComponent(report.projectName)}/_boards`}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="text-muted-foreground hover:text-foreground transition-colors p-1.5 rounded-md hover:bg-muted/50"
-                      >
-                        <Kanban className="h-4 w-4" />
-                      </a>
-                    </TooltipTrigger>
-                    <TooltipContent>Board</TooltipContent>
-                  </Tooltip>
+                  {!isCrossProjectReport && reportProject && (
+                    <>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <a
+                            href={`${adoBaseUrl}/${encodeURIComponent(reportProject)}/_backlogs/backlog`}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-muted-foreground hover:text-foreground transition-colors p-1.5 rounded-md hover:bg-muted/50"
+                          >
+                            <ClipboardList className="h-4 w-4" />
+                          </a>
+                        </TooltipTrigger>
+                        <TooltipContent>Backlog</TooltipContent>
+                      </Tooltip>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <a
+                            href={`${adoBaseUrl}/${encodeURIComponent(reportProject)}/_boards`}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-muted-foreground hover:text-foreground transition-colors p-1.5 rounded-md hover:bg-muted/50"
+                          >
+                            <Kanban className="h-4 w-4" />
+                          </a>
+                        </TooltipTrigger>
+                        <TooltipContent>Board</TooltipContent>
+                      </Tooltip>
+                    </>
+                  )}
                 </div>
               </div>
               <div className="flex items-center justify-between mt-1">
@@ -428,8 +441,33 @@ export function Reports() {
             </div>
           </motion.div>
 
-          {/* ── Row 1: Accomplishments + Look Ahead (area mode only) */}
-          {viewMode === 'area' && (
+          {/* Wiki conflict error */}
+          {wikiConflict && (
+            <motion.div
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2, duration: 0.3, ease: 'easeOut' }}
+            >
+              <Card className="border-destructive/50">
+                <CardContent className="py-4">
+                  <p className="text-sm font-medium text-destructive">
+                    Multiple ProjectOptics pages found in the wiki:
+                  </p>
+                  <ul className="mt-1.5 list-disc list-inside text-sm text-muted-foreground">
+                    {wikiConflict.paths.map((p) => (
+                      <li key={p}><code className="text-xs">{p}</code></li>
+                    ))}
+                  </ul>
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    Please remove or rename duplicates so the report can load wiki data.
+                  </p>
+                </CardContent>
+              </Card>
+            </motion.div>
+          )}
+
+          {/* ── Row 1: Accomplishments + Look Ahead (single-project with wiki only) */}
+          {showWikiSections && !wikiConflict && (
             <motion.div
               className="grid grid-cols-1 lg:grid-cols-2 gap-4"
               initial={{ opacity: 0, y: 12 }}
@@ -572,8 +610,8 @@ export function Reports() {
             </Card>
           </motion.div>
 
-          {/* Description (wiki-sourced, area mode only) */}
-          {viewMode === 'area' && report.description && (
+          {/* Description (wiki-sourced, single-project only) */}
+          {showWikiSections && !wikiConflict && report.description && (
             <motion.div
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
@@ -598,7 +636,7 @@ export function Reports() {
               onClick={() => { void handleExportSlide() }}
             >
               <Download className="h-4 w-4" />
-              {exporting ? 'Exporting…' : 'Export Slide'}
+              {exporting ? 'Exporting...' : 'Export Slide'}
             </Button>
           </div>
 
@@ -608,7 +646,7 @@ export function Reports() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.45, duration: 0.3, ease: 'easeOut' }}
           >
-            <GanttChart workItems={workItems} isLoading={isLoading} groupMode={viewMode} />
+            <GanttChart workItems={workItems} isLoading={isLoading} groupMode={groupMode} />
           </motion.div>
 
           {/* Offscreen slide for image capture */}

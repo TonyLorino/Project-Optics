@@ -18,13 +18,12 @@ import { getWorkItemColor } from '@/lib/colors'
 import { ADO_ORGANIZATION } from '@/lib/constants'
 import { StateFilter, ALL_STATES } from './StateFilter'
 import { TypeFilter, DEFAULT_SELECTED_TYPES, AREA_PATH_KEY } from './TypeFilter'
-import type { ViewMode } from '@/store/uiStore'
 import {
   type TreeNode,
   buildTree,
   hierarchyRank,
   groupByAreaPath,
-  groupByVertical,
+  groupByTag,
   flattenGroupedTree,
   collectAllExpandableIds,
   collectFirstLevelIds,
@@ -96,7 +95,7 @@ interface GanttChartProps {
   workItems: WorkItem[]
   isLoading?: boolean
   error?: Error | null
-  groupMode?: ViewMode
+  groupMode?: 'area' | 'tag'
 }
 
 export function GanttChart({ workItems, isLoading, error, groupMode = 'area' }: GanttChartProps) {
@@ -124,8 +123,8 @@ export function GanttChart({ workItems, isLoading, error, groupMode = 'area' }: 
     const roots = buildTree(filtered)
     sortNodes(roots)
     if (selectedTypes.has(AREA_PATH_KEY)) {
-      const grouped = groupMode === 'vertical'
-        ? groupByVertical(roots)
+      const grouped = groupMode === 'tag'
+        ? groupByTag(roots)
         : groupByAreaPath(roots)
       for (const g of grouped) sortNodes(g.roots)
       return grouped

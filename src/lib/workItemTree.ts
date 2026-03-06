@@ -1,5 +1,5 @@
 import type { WorkItem, WorkItemType } from '@/types/workItem'
-import { parseVerticalTags } from './verticalHelpers'
+import { parseTags, getTagDisplayValue } from './tagHelpers'
 
 // ── Hierarchy ordering ──────────────────────────────────────
 
@@ -111,21 +111,22 @@ export function groupByAreaPath(roots: TreeNode[]): AreaGroup[] {
   }))
 }
 
-// ── Vertical (tag) grouping ──────────────────────────────────
+// ── Tag grouping ─────────────────────────────────────────────
 
-export function groupByVertical(roots: TreeNode[]): AreaGroup[] {
+export function groupByTag(roots: TreeNode[]): AreaGroup[] {
   const groups = new Map<string, TreeNode[]>()
   for (const root of roots) {
-    const verticals = parseVerticalTags(root.item.tags)
-    if (verticals.length === 0) {
+    const tags = parseTags(root.item.tags)
+    if (tags.length === 0) {
       const existing = groups.get('')
       if (existing) existing.push(root)
       else groups.set('', [root])
     } else {
-      for (const v of verticals) {
-        const existing = groups.get(v)
+      for (const t of tags) {
+        const display = getTagDisplayValue(t.raw)
+        const existing = groups.get(display)
         if (existing) existing.push(root)
-        else groups.set(v, [root])
+        else groups.set(display, [root])
       }
     }
   }
@@ -138,7 +139,7 @@ export function groupByVertical(roots: TreeNode[]): AreaGroup[] {
   })
 
   return sorted.map(([label, nodes]) => ({
-    groupId: label ? `vtag:${label}` : '',
+    groupId: label ? `tag:${label}` : '',
     label,
     roots: nodes,
   }))

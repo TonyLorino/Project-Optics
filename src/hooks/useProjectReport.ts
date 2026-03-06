@@ -36,27 +36,42 @@ export interface ProjectReportData {
   wikiFields: Record<string, string>
 }
 
+/**
+ * Build report data from work items.
+ *
+ * - When `projectName` is provided, items are filtered to that project and wiki
+ *   data is used for narrative fields.
+ * - When `projectName` is null (cross-project mode), all provided items are
+ *   aggregated and `displayLabel` is used as the report title. Wiki fields are
+ *   left empty since they are per-project.
+ */
 export function useProjectReport(
   workItems: WorkItem[],
   sprints: Sprint[],
   projectName: string | null,
   wikiData?: WikiProjectData | null,
+  displayLabel?: string,
 ): ProjectReportData | null {
   return useMemo(() => {
-    if (!projectName) return null
+    const crossProject = projectName === null && displayLabel != null
+    if (!projectName && !crossProject) return null
 
     const wikiFields = wikiData?.fields ?? {}
-    const programManager = wikiFields['Program Manager'] ?? null
-    const projectManager = wikiFields['Project Manager'] ?? null
-    const accomplishments = wikiData?.accomplishments ?? null
-    const lookAhead = wikiData?.lookAhead ?? null
-    const description = wikiData?.description ?? null
+    const programManager = crossProject ? null : (wikiFields['Program Manager'] ?? null)
+    const projectManager = crossProject ? null : (wikiFields['Project Manager'] ?? null)
+    const accomplishments = crossProject ? null : (wikiData?.accomplishments ?? null)
+    const lookAhead = crossProject ? null : (wikiData?.lookAhead ?? null)
+    const description = crossProject ? null : (wikiData?.description ?? null)
 
-    const items = workItems.filter((w) => w.projectName === projectName)
+    const items = crossProject
+      ? workItems
+      : workItems.filter((w) => w.projectName === projectName)
+
+    const reportTitle = crossProject ? displayLabel! : projectName!
 
     if (items.length === 0) {
       return {
-        projectName,
+        projectName: reportTitle,
         progressPercent: 0,
         overallStatus: 'green',
         endDate: null,
@@ -69,11 +84,10 @@ export function useProjectReport(
         accomplishments,
         lookAhead,
         description,
-        wikiFields,
+        wikiFields: crossProject ? {} : wikiFields,
       }
     }
 
-    // Progress: completed story points / total story points
     const stories = items.filter((w) => w.workItemType === 'User Story')
     const totalSP = stories.reduce((sum, w) => sum + (w.storyPoints ?? 0), 0)
     const completedSP = stories
@@ -82,7 +96,6 @@ export function useProjectReport(
     const progressPercent =
       totalSP > 0 ? Math.round((completedSP / totalSP) * 100) : 0
 
-    // Overall status
     const now = new Date()
     now.setHours(0, 0, 0, 0)
 
@@ -104,7 +117,6 @@ export function useProjectReport(
     const overallStatus: 'green' | 'yellow' | 'red' =
       hasOpenRiskOrIssue || hasOverdueTarget ? 'yellow' : 'green'
 
-    // End date: latest targetDate across all items, fallback to latest sprint finishDate
     let endDate: string | null = null
     const targetDates = items
       .map((w) => w.targetDate)
@@ -113,7 +125,7 @@ export function useProjectReport(
     if (targetDates.length > 0) {
       const lastTarget = targetDates[targetDates.length - 1]
       if (lastTarget) endDate = format(new Date(lastTarget), 'yyyy-MM-dd')
-    } else {
+    } else if (!crossProject && projectName) {
       const projectSprints = sprints
         .filter((s): s is Sprint & { finishDate: string } =>
           s.projectName === projectName && s.finishDate != null,
@@ -125,7 +137,6 @@ export function useProjectReport(
       }
     }
 
-    // Last modified: most recent changedDate
     const changedDates = items
       .map((w) => new Date(w.changedDate).getTime())
       .sort((a, b) => b - a)
@@ -133,13 +144,11 @@ export function useProjectReport(
     const lastModified =
       lastChanged != null ? format(new Date(lastChanged), 'yyyy-MM-dd') : null
 
-    // Total story points (all items with SP)
     const totalStoryPoints = items.reduce(
       (sum, w) => sum + (w.storyPoints ?? 0),
       0,
     )
 
-    // Milestones: active features + 2 most recently completed
     const activeMilestones: MilestoneRow[] = items
       .filter((w) => w.workItemType === 'Feature' && w.state === 'Active')
       .map((w) => ({
@@ -178,7 +187,6 @@ export function useProjectReport(
 
     const milestones: MilestoneRow[] = [...activeMilestones, ...completedMilestones]
 
-    // Watch list: Issues and Risks
     const watchList: WatchListRow[] = items
       .filter(
         (w) =>
@@ -194,7 +202,7 @@ export function useProjectReport(
       }))
 
     return {
-      projectName,
+      projectName: reportTitle,
       progressPercent,
       overallStatus,
       endDate,
@@ -207,7 +215,7 @@ export function useProjectReport(
       accomplishments,
       lookAhead,
       description,
-      wikiFields,
+      wikiFields: crossProject ? {} : wikiFields,
     }
-  }, [workItems, sprints, projectName, wikiData])
+  }, [workItems, sprints, projectName, wikiData, displayLabel])
 }
