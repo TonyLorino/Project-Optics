@@ -219,7 +219,7 @@ export function Reports() {
   )
 
   const wikiConflict = isWikiConflict(wikiRaw) ? wikiRaw : null
-  const wikiData = wikiConflict ? undefined : wikiRaw
+  const wikiData = isWikiConflict(wikiRaw) ? undefined : wikiRaw
 
   const report = useProjectReport(
     workItems,
