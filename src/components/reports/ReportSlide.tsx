@@ -1,7 +1,7 @@
 import { forwardRef } from 'react'
 import Markdown from 'react-markdown'
 import type { ProjectReportData } from '@/hooks/useProjectReport'
-import { STATE_COLORS, LINKED_ISSUE_COLOR, LINKED_RISK_COLOR } from '@/lib/colors'
+import { LINKED_ISSUE_COLOR, LINKED_RISK_COLOR } from '@/lib/colors'
 
 const STATUS_COLORS = {
   green: '#4ade80',
@@ -122,7 +122,7 @@ export const ReportSlide = forwardRef<HTMLDivElement, ReportSlideProps>(
                           <td className="py-1 text-center w-12">
                             <span
                               className="inline-block h-2 w-2 rounded-full"
-                              style={{ backgroundColor: STATE_COLORS[m.state] ?? STATE_COLORS.New }}
+                              style={{ backgroundColor: m.statusColor }}
                             />
                           </td>
                           <td className="py-1 text-right text-muted-foreground w-20">

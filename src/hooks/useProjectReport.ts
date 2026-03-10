@@ -3,6 +3,9 @@ import { format } from 'date-fns'
 import type { WorkItem } from '@/types/workItem'
 import type { Sprint } from '@/types/sprint'
 import type { WikiProjectData } from '@/lib/wikiParser'
+import { STATE_COLORS } from '@/lib/colors'
+
+const OVERDUE_COLOR = '#facc15'
 
 export interface MilestoneRow {
   id: number
@@ -10,6 +13,7 @@ export interface MilestoneRow {
   state: string
   targetDate: string | null
   completed: boolean
+  statusColor: string
 }
 
 export interface WatchListRow {
@@ -151,15 +155,18 @@ export function useProjectReport(
 
     const activeMilestones: MilestoneRow[] = items
       .filter((w) => w.workItemType === 'Feature' && w.state === 'Active')
-      .map((w) => ({
-        id: w.id,
-        name: w.title,
-        state: w.state,
-        targetDate: w.targetDate
-          ? format(new Date(w.targetDate), 'yyyy-MM-dd')
-          : null,
-        completed: false,
-      }))
+      .map((w) => {
+        const td = w.targetDate ? format(new Date(w.targetDate), 'yyyy-MM-dd') : null
+        const overdue = td != null && new Date(td) < now
+        return {
+          id: w.id,
+          name: w.title,
+          state: w.state,
+          targetDate: td,
+          completed: false,
+          statusColor: overdue ? OVERDUE_COLOR : (STATE_COLORS[w.state] ?? STATE_COLORS.New),
+        }
+      })
       .sort((a, b) => {
         if (a.targetDate && b.targetDate) return a.targetDate.localeCompare(b.targetDate)
         if (a.targetDate) return -1
@@ -183,6 +190,7 @@ export function useProjectReport(
           ? format(new Date(w.targetDate), 'yyyy-MM-dd')
           : null,
         completed: true,
+        statusColor: STATE_COLORS[w.state] ?? STATE_COLORS.New,
       }))
 
     const milestones: MilestoneRow[] = [...activeMilestones, ...completedMilestones]

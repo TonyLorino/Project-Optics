@@ -25,7 +25,7 @@ import { useAreaPaths } from '@/hooks/useAreaPaths'
 import { useUIStore } from '@/store/uiStore'
 import { parseSelections, filterByAreaSelections, getAreaNameFromSelection } from '@/lib/selectionHelpers'
 import { collectTags, filterByTags, getTagDisplayValue } from '@/lib/tagHelpers'
-import { STATE_COLORS, LINKED_ISSUE_COLOR, LINKED_RISK_COLOR } from '@/lib/colors'
+import { LINKED_ISSUE_COLOR, LINKED_RISK_COLOR } from '@/lib/colors'
 import { cn } from '@/lib/utils'
 import { ADO_ORGANIZATION } from '@/lib/constants'
 import { extractUrl, isWikiConflict } from '@/lib/wikiParser'
@@ -40,8 +40,7 @@ function StatusDot({ status }: { status: 'green' | 'yellow' | 'red' }) {
   return <span className={cn('inline-block h-3 w-3 rounded-full', colors[status])} />
 }
 
-function MilestoneStatusDot({ state }: { state: string }) {
-  const color = STATE_COLORS[state] ?? STATE_COLORS.New
+function MilestoneStatusDot({ color }: { color: string }) {
   return (
     <span
       className="inline-block h-3 w-3 rounded-full"
@@ -550,7 +549,7 @@ export function Reports() {
                           )}>
                             <td className="py-2 pr-2">{m.name}</td>
                             <td className="py-2 text-center w-16">
-                              <MilestoneStatusDot state={m.state} />
+                              <MilestoneStatusDot color={m.statusColor} />
                             </td>
                             <td className="py-2 text-right text-muted-foreground w-28">
                               {m.targetDate ?? '—'}
