@@ -22,6 +22,7 @@ export interface WorkItem {
   stateChangeDate?: string
   closedDate?: string
   resolvedDate?: string
+  startDate?: string
   targetDate?: string
   activatedDate?: string
   tags?: string

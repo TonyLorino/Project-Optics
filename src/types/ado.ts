@@ -75,6 +75,7 @@ export interface ADOWorkItemFields {
   'Microsoft.VSTS.Common.StateChangeDate'?: string
   'Microsoft.VSTS.Common.ClosedDate'?: string
   'Microsoft.VSTS.Common.ActivatedDate'?: string
+  'Microsoft.VSTS.Scheduling.StartDate'?: string
   [key: string]: unknown
 }
 

@@ -58,7 +58,7 @@ function sortNodes(nodes: TreeNode[]): void {
 }
 
 function getStartDate(item: WorkItem): Date {
-  return parseISO(item.activatedDate ?? item.createdDate)
+  return parseISO(item.startDate ?? item.activatedDate ?? item.createdDate)
 }
 
 function findInheritedEndDate(item: WorkItem, lookup: Map<number, WorkItem>): Date | null {
@@ -266,12 +266,15 @@ export function GanttChart({ workItems, isLoading, error, groupMode = 'area' }: 
       if (!container) return
       const rect = container.getBoundingClientRect()
       const rawX = e.clientX - rect.left
-      const clampedX = Math.min(rawX + 12, container.clientWidth - 270)
-      setTooltip({
-        item,
-        x: clampedX,
-        y: e.clientY - rect.top + 12,
-      })
+      const rawY = e.clientY - rect.top
+      const tooltipW = 270
+      const tooltipH = 150
+      const clampedX = Math.max(0, Math.min(rawX + 12, container.clientWidth - tooltipW))
+      const fitsBelow = rawY + 12 + tooltipH <= container.clientHeight
+      const clampedY = fitsBelow
+        ? rawY + 12
+        : Math.max(0, rawY - tooltipH - 4)
+      setTooltip({ item, x: clampedX, y: clampedY })
     },
     [],
   )
