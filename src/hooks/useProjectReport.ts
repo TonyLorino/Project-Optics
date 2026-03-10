@@ -164,7 +164,7 @@ export function useProjectReport(
           state: w.state,
           targetDate: td,
           completed: false,
-          statusColor: overdue ? OVERDUE_COLOR : (STATE_COLORS[w.state] ?? STATE_COLORS.New),
+          statusColor: overdue ? OVERDUE_COLOR : (STATE_COLORS[w.state] ?? '#d4d4d8'),
         }
       })
       .sort((a, b) => {
@@ -190,7 +190,7 @@ export function useProjectReport(
           ? format(new Date(w.targetDate), 'yyyy-MM-dd')
           : null,
         completed: true,
-        statusColor: STATE_COLORS[w.state] ?? STATE_COLORS.New,
+        statusColor: STATE_COLORS[w.state] ?? '#d4d4d8',
       }))
 
     const milestones: MilestoneRow[] = [...activeMilestones, ...completedMilestones]
