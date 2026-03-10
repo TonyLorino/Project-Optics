@@ -94,7 +94,7 @@ function mapWorkItem(raw: ADOWorkItem, allItemTypes: Map<number, string>): WorkI
     closedDate: f['Microsoft.VSTS.Common.ClosedDate'] ?? undefined,
     resolvedDate: (f['Microsoft.VSTS.Common.ResolvedDate'] as string | undefined) ?? undefined,
     startDate: (f['Microsoft.VSTS.Scheduling.StartDate'] as string | undefined) ?? undefined,
-    targetDate: (f['Microsoft.VSTS.Scheduling.TargetDate'] as string | undefined) ?? undefined,
+    targetDate: f['Microsoft.VSTS.Scheduling.TargetDate'] ?? undefined,
     activatedDate: f['Microsoft.VSTS.Common.ActivatedDate'] ?? undefined,
     tags: f['System.Tags'] ?? undefined,
     description: f['System.Description'] ?? undefined,
